@@ -2,6 +2,8 @@
 
 A simple ear training practice app for RCM students.
 
+**Live App:** https://rcm-ear-training.streamlit.app/
+
 Students can choose their level and practise interval identification using piano samples. The app plays intervals according to the level requirements, then students choose the correct answer.
 
 ## Features
