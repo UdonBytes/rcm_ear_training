@@ -8,6 +8,33 @@ from rcm_ear_training.config import (
     PAUSE_DURATION,
     SAMPLE_RATE,
 )
+from rcm_ear_training.chords import get_chord_requirement
+from rcm_ear_training.chords import (
+    AUGMENTED_TRIAD,
+    DIMINISHED_7TH,
+    DOMINANT_7TH,
+    MAJOR_TRIAD,
+    MINOR_TRIAD,
+    TONE_CHOICES,
+    chord_notes,
+    chord_quality_choices,
+    create_chord_question,
+    create_chord_waveform,
+    chord_display_name,
+    possible_chord_roots,
+)
+from rcm_ear_training.curriculum import (
+    CHORDS,
+    CLAPBACK,
+    FUTURE,
+    IMPLEMENTED,
+    INTERVALS,
+    PLAYBACK,
+    current_levels,
+    future_levels,
+    get_level,
+    implemented_tests,
+)
 from rcm_ear_training.display import group_answer_choices
 from rcm_ear_training.questions import (
     audio_cache_label,
@@ -235,6 +262,168 @@ class DisplayTests(unittest.TestCase):
                 ["Perfect 8ve"],
             ],
         )
+
+
+class CurriculumTests(unittest.TestCase):
+    def test_current_levels_cover_rcm_1_to_8(self):
+        levels = current_levels()
+
+        self.assertEqual([level.label for level in levels], [
+            "Level 1",
+            "Level 2",
+            "Level 3",
+            "Level 4",
+            "Level 5",
+            "Level 6",
+            "Level 7",
+            "Level 8",
+        ])
+        self.assertEqual([level.interval_level for level in levels], list(range(1, 9)))
+
+    def test_levels_1_to_8_map_to_musicianship_test_categories(self):
+        level = get_level("level_1")
+
+        self.assertEqual(
+            [test.id for test in level.tests],
+            [INTERVALS, CHORDS, CLAPBACK, PLAYBACK],
+        )
+        self.assertEqual(implemented_tests(level)[0].id, INTERVALS)
+        self.assertEqual(implemented_tests(level)[0].status, IMPLEMENTED)
+        self.assertEqual(implemented_tests(level)[1].id, CHORDS)
+
+    def test_future_expansion_levels_are_mapped_but_not_current(self):
+        planned_levels = future_levels()
+
+        self.assertEqual(
+            [level.id for level in planned_levels],
+            ["prep_a", "prep_b", "level_9", "level_10", "arct"],
+        )
+        self.assertTrue(all(level.status == FUTURE for level in planned_levels))
+        self.assertNotIn(INTERVALS, [test.id for test in get_level("prep_a").tests])
+
+
+class ChordRequirementTests(unittest.TestCase):
+    def test_level_1_chords_use_major_minor_root_position_triads(self):
+        requirement = get_chord_requirement("level_1")
+
+        self.assertEqual(requirement.chord_qualities, ("Major triad", "Minor triad"))
+        self.assertEqual(requirement.positions, ("Root position",))
+        self.assertEqual(
+            requirement.playback,
+            "Broken triad, then solid/blocked triad.",
+        )
+
+    def test_level_3_adds_chord_tone_identification(self):
+        requirement = get_chord_requirement("level_3")
+
+        self.assertIn("Chord-tone identification", requirement.question_types)
+        self.assertIn("root, third, or fifth", requirement.implementation_notes[1])
+
+    def test_level_5_adds_dominant_seventh(self):
+        requirement = get_chord_requirement("level_5")
+
+        self.assertEqual(
+            requirement.chord_qualities,
+            ("Major triad", "Minor triad", "Dominant 7th"),
+        )
+        self.assertIn("Close position", requirement.positions)
+
+    def test_level_7_and_8_include_augmented_triads(self):
+        self.assertIn("Augmented triad", get_chord_requirement("level_7").chord_qualities)
+        self.assertIn("Augmented triad", get_chord_requirement("level_8").chord_qualities)
+
+    def test_future_level_10_adds_seventh_chord_qualities(self):
+        requirement = get_chord_requirement("level_10")
+
+        self.assertIn("Major-major 7th", requirement.chord_qualities)
+        self.assertIn("Minor-minor 7th", requirement.chord_qualities)
+
+
+class ChordGenerationTests(unittest.TestCase):
+    def test_chord_formulas_create_expected_notes(self):
+        self.assertEqual(chord_notes("C4", MAJOR_TRIAD), ["C4", "E4", "G4"])
+        self.assertEqual(chord_notes("C4", MINOR_TRIAD), ["C4", "D#4", "G4"])
+        self.assertEqual(chord_notes("C4", DOMINANT_7TH), ["C4", "E4", "G4", "A#4"])
+        self.assertEqual(chord_notes("C4", DIMINISHED_7TH), ["C4", "D#4", "F#4", "A4"])
+        self.assertEqual(chord_notes("C4", AUGMENTED_TRIAD), ["C4", "E4", "G#4"])
+
+    def test_chord_quality_choices_expand_by_level(self):
+        self.assertEqual(chord_quality_choices(1), (MAJOR_TRIAD, MINOR_TRIAD))
+        self.assertEqual(chord_quality_choices(5), (MAJOR_TRIAD, MINOR_TRIAD, DOMINANT_7TH))
+        self.assertIn(DIMINISHED_7TH, chord_quality_choices(6))
+        self.assertIn(AUGMENTED_TRIAD, chord_quality_choices(7))
+
+    def test_major_minor_display_names_include_triad_for_levels_5_to_8(self):
+        self.assertEqual(chord_display_name(MAJOR_TRIAD, 1), "Major")
+        self.assertEqual(chord_display_name(MINOR_TRIAD, 1), "Minor")
+        self.assertEqual(chord_display_name(MAJOR_TRIAD, 5), "Major (Triad)")
+        self.assertEqual(chord_display_name(MINOR_TRIAD, 5), "Minor (Triad)")
+
+    def test_possible_chord_roots_stay_inside_sample_range(self):
+        roots = possible_chord_roots(DOMINANT_7TH)
+
+        self.assertIn("F3", roots)
+        self.assertNotIn("A5", roots)
+
+    def test_level_1_chord_audio_is_broken_then_solid(self):
+        waveform = create_chord_waveform(1, "C4", MAJOR_TRIAD)
+
+        broken_samples = int(SAMPLE_RATE * 0.55) * 3
+        pause_samples = int(SAMPLE_RATE * PAUSE_DURATION)
+        solid_samples = int(SAMPLE_RATE * 1.4)
+        self.assertEqual(len(waveform), broken_samples + pause_samples + solid_samples)
+
+    def test_level_3_chord_audio_includes_target_tone(self):
+        waveform = create_chord_waveform(3, "C4", MAJOR_TRIAD, "Third")
+
+        broken_samples = int(SAMPLE_RATE * 0.55) * 3
+        pause_samples = int(SAMPLE_RATE * PAUSE_DURATION)
+        event_samples = int(SAMPLE_RATE * 1.4)
+        expected_samples = event_samples + pause_samples + broken_samples + pause_samples + event_samples
+        self.assertEqual(len(waveform), expected_samples)
+
+    def test_level_3_chord_question_asks_for_quality_and_chord_tone(self):
+        question = create_chord_question(3)
+
+        self.assertEqual(question.question_type, "quality_and_tone")
+        self.assertIn(question.quality_answer, ["Major", "Minor"])
+        self.assertEqual(question.quality_choices, ("Major", "Minor"))
+        self.assertIn(question.tone_answer, TONE_CHOICES)
+        self.assertEqual(question.tone_choices, TONE_CHOICES)
+        self.assertEqual(question.choices, [])
+
+    def test_level_1_and_2_chord_choices_are_not_randomized(self):
+        for level in [1, 2]:
+            question = create_chord_question(level)
+
+            with self.subTest(level=level):
+                self.assertEqual(question.choices, ["Major", "Minor"])
+
+    def test_level_5_to_8_chord_choices_follow_display_order(self):
+        expected_choices = {
+            5: ["Major (Triad)", "Minor (Triad)", "Dominant 7th"],
+            6: ["Major (Triad)", "Minor (Triad)", "Dominant 7th", "Diminish 7th"],
+            7: [
+                "Major (Triad)",
+                "Minor (Triad)",
+                "Dominant 7th",
+                "Diminish 7th",
+                "Augmented (Triad)",
+            ],
+            8: [
+                "Major (Triad)",
+                "Minor (Triad)",
+                "Dominant 7th",
+                "Diminish 7th",
+                "Augmented (Triad)",
+            ],
+        }
+
+        for level, choices in expected_choices.items():
+            question = create_chord_question(level)
+
+            with self.subTest(level=level):
+                self.assertEqual(question.choices, choices)
 
 
 if __name__ == "__main__":
