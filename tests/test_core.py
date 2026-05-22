@@ -2,6 +2,7 @@ import unittest
 
 from rcm_ear_training.audio import create_interval_waveform
 from rcm_ear_training.config import (
+    ATTACK_THRESHOLD_RATIO,
     CONNECTED_NOTE_SPACING,
     NOTE_DURATION,
     PAUSE_DURATION,
@@ -41,7 +42,7 @@ class SampleTests(unittest.TestCase):
 
     def test_loaded_samples_are_aligned_to_audible_attack(self):
         audio = load_piano_sample("C4")
-        threshold = max(abs(audio)) * 0.01
+        threshold = max(abs(audio)) * ATTACK_THRESHOLD_RATIO
         first_audible_sample = next(
             index for index, value in enumerate(audio) if abs(value) >= threshold
         )
@@ -60,7 +61,7 @@ class SampleTests(unittest.TestCase):
 
             with self.subTest(note=note):
                 audio = load_piano_sample(note)
-                threshold = max(abs(audio)) * 0.01
+                threshold = max(abs(audio)) * ATTACK_THRESHOLD_RATIO
                 first_audible_sample = next(
                     index
                     for index, value in enumerate(audio)
@@ -69,6 +70,24 @@ class SampleTests(unittest.TestCase):
 
                 self.assertEqual(len(audio), expected_length)
                 self.assertEqual(first_audible_sample, expected_attack)
+
+    def test_major_sixth_pair_has_aligned_strong_attacks(self):
+        lower_note = load_piano_sample("F4")
+        upper_note = load_piano_sample("D5")
+
+        onsets = []
+
+        for audio in [lower_note, upper_note]:
+            threshold = max(abs(audio)) * ATTACK_THRESHOLD_RATIO
+            onsets.append(
+                next(
+                    index
+                    for index, value in enumerate(audio)
+                    if abs(value) >= threshold
+                )
+            )
+
+        self.assertEqual(onsets[0], onsets[1])
 
 
 class AudioTests(unittest.TestCase):
@@ -93,7 +112,7 @@ class AudioTests(unittest.TestCase):
 
         for start in starts:
             segment = waveform[start:start + note_samples]
-            threshold = max(abs(segment)) * 0.01
+            threshold = max(abs(segment)) * ATTACK_THRESHOLD_RATIO
             first_audible_sample = next(
                 index
                 for index, value in enumerate(segment)
@@ -118,9 +137,18 @@ class AudioTests(unittest.TestCase):
 
 class QuestionCacheTests(unittest.TestCase):
     def test_audio_cache_labels_distinguish_playback_patterns(self):
-        self.assertEqual(audio_cache_label(1), "steady_articulation_connected")
-        self.assertEqual(audio_cache_label(4), "steady_articulation_connected")
-        self.assertEqual(audio_cache_label(5), "fixed_length_aligned_melodic_harmonic")
+        self.assertEqual(
+            audio_cache_label(1),
+            "strong_attack_steady_articulation_connected",
+        )
+        self.assertEqual(
+            audio_cache_label(4),
+            "strong_attack_steady_articulation_connected",
+        )
+        self.assertEqual(
+            audio_cache_label(5),
+            "strong_attack_aligned_melodic_harmonic",
+        )
 
     def test_safe_filename_normalizes_interval_names(self):
         filename = make_safe_filename(

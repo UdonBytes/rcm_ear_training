@@ -82,9 +82,9 @@ def audio_cache_label(level):
     """Return the synthesis cache label for a level."""
 
     if level <= 4:
-        return "steady_articulation_connected"
+        return "strong_attack_steady_articulation_connected"
 
-    return "fixed_length_aligned_melodic_harmonic"
+    return "strong_attack_aligned_melodic_harmonic"
 
 
 def create_question(level, answer_history=None):
