@@ -7,15 +7,7 @@ import numpy as np
 import soundfile as sf
 
 from rcm_ear_training.audio import add_fade_out, create_silence
-from rcm_ear_training.config import (
-    AUDIO_FOLDER,
-    BROKEN_CHORD_NOTE_DURATION,
-    CHORD_EVENT_DURATION,
-    PAUSE_DURATION,
-    SAMPLE_RATE,
-    VOLUME,
-    ensure_audio_folder,
-)
+from rcm_ear_training import config
 from rcm_ear_training.questions import make_safe_filename
 from rcm_ear_training.samples import load_piano_sample, note_has_sample
 from rcm_ear_training.theory import (
@@ -59,6 +51,8 @@ ADVANCED_CHORD_DISPLAY_NAMES = {
 }
 
 TONE_CHOICES = (ROOT, THIRD, FIFTH)
+BROKEN_CHORD_NOTE_DURATION = getattr(config, "BROKEN_CHORD_NOTE_DURATION", 0.55)
+CHORD_EVENT_DURATION = getattr(config, "CHORD_EVENT_DURATION", 1.4)
 
 
 @dataclass(frozen=True)
@@ -339,7 +333,7 @@ def possible_chord_roots(chord_quality):
 def trim_or_pad_event(audio, duration):
     """Trim or pad a generated chord event to a fixed duration."""
 
-    target_length = int(SAMPLE_RATE * duration)
+    target_length = int(config.SAMPLE_RATE * duration)
 
     if len(audio) > target_length:
         return audio[:target_length]
@@ -350,7 +344,7 @@ def trim_or_pad_event(audio, duration):
 def create_solid_chord_waveform(notes):
     """Create a blocked chord by summing aligned note samples."""
 
-    chord_audio = np.zeros(int(SAMPLE_RATE * CHORD_EVENT_DURATION))
+    chord_audio = np.zeros(int(config.SAMPLE_RATE * CHORD_EVENT_DURATION))
 
     for note in notes:
         note_audio = trim_or_pad_event(load_piano_sample(note), CHORD_EVENT_DURATION)
@@ -361,7 +355,7 @@ def create_solid_chord_waveform(notes):
     if max_value > 0:
         chord_audio = chord_audio / max_value
 
-    return add_fade_out(chord_audio * VOLUME)
+    return add_fade_out(chord_audio * config.VOLUME)
 
 
 def create_broken_chord_waveform(notes):
@@ -380,7 +374,7 @@ def create_chord_waveform(level, root_note, chord_quality, target_tone=None):
     """Create the playback waveform for a chord question."""
 
     notes = chord_notes(root_note, chord_quality)
-    pause = create_silence(PAUSE_DURATION)
+    pause = create_silence(config.PAUSE_DURATION)
 
     if level == 1:
         return np.concatenate([
@@ -412,7 +406,7 @@ def create_chord_audio(level, root_note, chord_quality, target_tone, file_path):
     sf.write(
         file_path,
         create_chord_waveform(level, root_note, chord_quality, target_tone),
-        SAMPLE_RATE,
+        config.SAMPLE_RATE,
     )
 
 
@@ -428,7 +422,7 @@ def create_chord_question(level):
     if level < 1 or level > 8:
         raise ValueError(f"Chords are currently implemented for levels 1-8, not {level}.")
 
-    ensure_audio_folder()
+    config.ensure_audio_folder()
     qualities = chord_quality_choices(level)
     chord_quality = random.choice(qualities)
     roots = possible_chord_roots(chord_quality)
@@ -461,7 +455,7 @@ def create_chord_question(level):
     filename = make_safe_filename(
         f"level_{level}_{root_note}_{chord_quality}_{target_tone or question_type}_{chord_audio_cache_label()}.wav"
     )
-    file_path = AUDIO_FOLDER / filename
+    file_path = config.AUDIO_FOLDER / filename
 
     if not file_path.exists():
         create_chord_audio(level, root_note, chord_quality, target_tone, file_path)
