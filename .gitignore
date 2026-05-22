@@ -1,0 +1,5 @@
+__pycache__/
+*.py[cod]
+
+# Generated interval cache files. Existing tracked examples remain tracked.
+static/audio/level_*.wav
