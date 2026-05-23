@@ -1,16 +1,12 @@
 """Streamlit entry point for the RCM ear-training app."""
 
+import importlib
+
 import streamlit as st
 
+import rcm_ear_training.clapback as clapback
 from rcm_ear_training.config import AUDIO_FOLDER
 from rcm_ear_training.chords import create_chord_question
-from rcm_ear_training.clapback import (
-    choose_unplayed_example_index,
-    create_clapback_question,
-    create_playback_question,
-    get_playable_clapback_examples,
-    get_playable_playback_examples,
-)
 from rcm_ear_training.curriculum import (
     IMPLEMENTED,
     CHORDS,
@@ -24,6 +20,14 @@ from rcm_ear_training.curriculum import (
 from rcm_ear_training.display import group_answer_choices
 from rcm_ear_training.questions import create_question
 from rcm_ear_training.theory import get_level_description
+
+
+clapback = importlib.reload(clapback)
+choose_unplayed_example_index = clapback.choose_unplayed_example_index
+create_clapback_question = clapback.create_clapback_question
+create_playback_question = clapback.create_playback_question
+get_playable_clapback_examples = clapback.get_playable_clapback_examples
+get_playable_playback_examples = clapback.get_playable_playback_examples
 
 
 st.set_page_config(
