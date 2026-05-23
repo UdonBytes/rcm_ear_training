@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import random
 
 from rcm_ear_training.audio import create_interval_audio
-from rcm_ear_training.config import AUDIO_FOLDER, ensure_audio_folder
+from rcm_ear_training.config import INTERVAL_AUDIO_FOLDER, ensure_audio_folder
 from rcm_ear_training.samples import get_possible_starting_notes
 from rcm_ear_training.theory import INTERVALS, LEVEL_INTERVALS, midi_to_note, note_to_midi
 
@@ -93,7 +93,7 @@ def create_question(level, answer_history=None):
     if level not in LEVEL_INTERVALS:
         raise ValueError(f"Level {level} has not been created yet.")
 
-    ensure_audio_folder()
+    ensure_audio_folder(INTERVAL_AUDIO_FOLDER)
     interval_choices = LEVEL_INTERVALS[level]
     correct_answer = choose_interval(level, answer_history)
     possible_starting_notes = get_possible_starting_notes(correct_answer)
@@ -114,7 +114,7 @@ def create_question(level, answer_history=None):
     filename = make_safe_filename(
         f"level_{level}_{start_note}_{end_note}_{correct_answer}_{direction}_{audio_cache_label(level)}.wav"
     )
-    file_path = AUDIO_FOLDER / filename
+    file_path = INTERVAL_AUDIO_FOLDER / filename
 
     if not file_path.exists():
         create_interval_audio(level, start_note, end_note, direction, file_path)
@@ -128,6 +128,6 @@ def create_question(level, answer_history=None):
         end_note=end_note,
         answer=correct_answer,
         choices=choices,
-        audio_file=filename,
+        audio_file=f"intervals/{filename}",
         direction=direction,
     )

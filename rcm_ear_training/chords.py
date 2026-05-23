@@ -422,7 +422,7 @@ def create_chord_question(level):
     if level < 1 or level > 8:
         raise ValueError(f"Chords are currently implemented for levels 1-8, not {level}.")
 
-    config.ensure_audio_folder()
+    config.ensure_audio_folder(config.CHORD_AUDIO_FOLDER)
     qualities = chord_quality_choices(level)
     chord_quality = random.choice(qualities)
     roots = possible_chord_roots(chord_quality)
@@ -455,7 +455,7 @@ def create_chord_question(level):
     filename = make_safe_filename(
         f"level_{level}_{root_note}_{chord_quality}_{target_tone or question_type}_{chord_audio_cache_label()}.wav"
     )
-    file_path = config.AUDIO_FOLDER / filename
+    file_path = config.CHORD_AUDIO_FOLDER / filename
 
     if not file_path.exists():
         create_chord_audio(level, root_note, chord_quality, target_tone, file_path)
@@ -466,7 +466,7 @@ def create_chord_question(level):
         chord_quality=chord_quality,
         answer=answer,
         choices=choices,
-        audio_file=filename,
+        audio_file=f"chords/{filename}",
         prompt=prompt,
         question_type=question_type,
         target_tone=target_tone,

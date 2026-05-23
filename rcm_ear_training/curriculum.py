@@ -46,8 +46,8 @@ CHORD_TEST = TestDefinition(
 CLAPBACK_TEST = TestDefinition(
     id=CLAPBACK,
     label="Clapback",
-    status=PLANNED,
-    description="Clap, tap, or sing back a short melody or rhythm.",
+    status=IMPLEMENTED,
+    description="Clap, tap, or sing back a short melody after a count-in.",
 )
 PLAYBACK_TEST = TestDefinition(
     id=PLAYBACK,

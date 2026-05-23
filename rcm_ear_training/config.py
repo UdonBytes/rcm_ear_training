@@ -16,10 +16,15 @@ ATTACK_PREROLL_SECONDS = 0.005
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 STATIC_FOLDER = PROJECT_ROOT / "static"
 AUDIO_FOLDER = STATIC_FOLDER / "audio"
+INTERVAL_AUDIO_FOLDER = AUDIO_FOLDER / "intervals"
+CHORD_AUDIO_FOLDER = AUDIO_FOLDER / "chords"
+CLAPBACK_AUDIO_FOLDER = AUDIO_FOLDER / "clapback"
 PIANO_SAMPLE_FOLDER = STATIC_FOLDER / "piano_samples"
+PERCUSSION_FOLDER = STATIC_FOLDER / "percussion"
+CLAPBACK_EXAMPLE_FOLDER = STATIC_FOLDER / "clapback_examples"
 
 
-def ensure_audio_folder():
-    """Create the generated audio folder if it does not exist."""
+def ensure_audio_folder(folder=AUDIO_FOLDER):
+    """Create a generated audio folder if it does not exist."""
 
-    AUDIO_FOLDER.mkdir(parents=True, exist_ok=True)
+    folder.mkdir(parents=True, exist_ok=True)

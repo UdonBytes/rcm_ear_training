@@ -1,5 +1,9 @@
 __pycache__/
 *.py[cod]
 
-# Generated interval cache files. Existing tracked examples remain tracked.
-static/audio/level_*.wav
+# Generated audio cache files. Existing tracked examples remain tracked.
+static/audio/*.wav
+static/audio/**/*.wav
+
+# Local image-inspection scratch files.
+tmp_clapback_crops/

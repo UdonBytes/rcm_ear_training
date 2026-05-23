@@ -4,9 +4,22 @@ from rcm_ear_training.audio import create_interval_waveform
 from rcm_ear_training.config import (
     ATTACK_THRESHOLD_RATIO,
     CONNECTED_NOTE_SPACING,
+    CLAPBACK_EXAMPLE_FOLDER,
     NOTE_DURATION,
     PAUSE_DURATION,
     SAMPLE_RATE,
+)
+from rcm_ear_training.clapback import (
+    BEAT_SECONDS,
+    CLAPBACK_AUDIO_VERSION,
+    LEVEL_1_CLAPBACK_EXAMPLES,
+    beats_per_measure,
+    choose_unplayed_example_index,
+    create_clapback_question,
+    create_clapback_waveform,
+    events_with_completed_length,
+    get_clapback_examples,
+    get_playable_clapback_examples,
 )
 from rcm_ear_training.chords import get_chord_requirement
 from rcm_ear_training.chords import (
@@ -290,6 +303,10 @@ class CurriculumTests(unittest.TestCase):
         self.assertEqual(implemented_tests(level)[0].id, INTERVALS)
         self.assertEqual(implemented_tests(level)[0].status, IMPLEMENTED)
         self.assertEqual(implemented_tests(level)[1].id, CHORDS)
+        self.assertEqual(
+            [test.id for test in implemented_tests(level)],
+            [INTERVALS, CHORDS, CLAPBACK],
+        )
 
     def test_future_expansion_levels_are_mapped_but_not_current(self):
         planned_levels = future_levels()
@@ -424,6 +441,248 @@ class ChordGenerationTests(unittest.TestCase):
 
             with self.subTest(level=level):
                 self.assertEqual(question.choices, choices)
+
+
+class ClapbackTests(unittest.TestCase):
+    def test_level_1_contains_approved_source_examples(self):
+        examples = get_clapback_examples(1)
+
+        self.assertEqual(examples, LEVEL_1_CLAPBACK_EXAMPLES)
+        self.assertEqual(len(examples), 23)
+        self.assertEqual(examples[0].id, "clap1-1")
+        self.assertEqual(examples[0].key, "D major")
+        self.assertEqual(examples[0].status, "approved")
+        self.assertEqual(examples[1].id, "clap1-2")
+        self.assertEqual(examples[1].status, "approved")
+        self.assertNotEqual(examples[1].draft_events, ())
+        self.assertEqual(examples[2].id, "clap1-3")
+        self.assertEqual(examples[2].status, "approved")
+        self.assertEqual(
+            tuple((event.note, event.beats) for event in examples[2].draft_events),
+            (
+                ("E4", 1.5),
+                ("C4", 0.5),
+                ("D4", 1),
+                ("E4", 1),
+                ("E4", 0.5),
+                ("F4", 0.5),
+                ("G4", 1),
+                ("C4", 3),
+            ),
+        )
+        self.assertEqual(examples[3].id, "clap1-4")
+        self.assertEqual(examples[3].status, "approved")
+        self.assertEqual(
+            tuple((event.note, event.beats) for event in examples[3].draft_events),
+            (
+                ("D5", 1),
+                ("B4", 0.5),
+                ("A4", 0.5),
+                ("B4", 1.5),
+                ("C5", 0.5),
+                ("A4", 1),
+                ("F#4", 1),
+                ("G4", 2),
+            ),
+        )
+        self.assertEqual(examples[4].id, "clap1-5")
+        self.assertEqual(examples[4].status, "approved")
+        self.assertEqual(
+            tuple((event.note, event.beats) for event in examples[4].draft_events),
+            (
+                ("F4", 1),
+                ("F4", 1),
+                ("A4", 0.5),
+                ("F4", 0.5),
+                ("C4", 1),
+                ("C4", 1.5),
+                ("E4", 0.5),
+                ("F4", 3),
+            ),
+        )
+        self.assertTrue((CLAPBACK_EXAMPLE_FOLDER / examples[0].image_file).exists())
+        self.assertTrue((CLAPBACK_EXAMPLE_FOLDER / examples[1].image_file).exists())
+        self.assertTrue((CLAPBACK_EXAMPLE_FOLDER / examples[2].image_file).exists())
+        self.assertTrue((CLAPBACK_EXAMPLE_FOLDER / examples[4].image_file).exists())
+        expected_new_examples = {
+            "clap1-6": (
+                ("C4", 0.5), ("D4", 0.5), ("E4", 0.5), ("C4", 0.5),
+                ("F4", 1.5), ("F4", 0.5), ("G4", 1), ("C5", 1),
+                ("F4", 2),
+            ),
+            "clap1-7": (
+                ("C4", 0.5), ("D4", 0.5), ("E4", 0.5), ("F4", 0.5),
+                ("G4", 1), ("F4", 1.5), ("E4", 0.5), ("D4", 1),
+                ("C4", 3),
+            ),
+            "clap1-8": (
+                ("C5", 0.5), ("Bb4", 0.5), ("A4", 1), ("Bb4", 1.5),
+                ("A4", 0.5), ("G4", 1), ("E4", 1), ("F4", 2),
+            ),
+            "clap1-9": (
+                ("C4", 1), ("F4", 0.5), ("G4", 0.5), ("A4", 1),
+                ("C4", 1.5), ("A4", 0.5), ("G4", 1), ("F4", 3),
+            ),
+            "clap1-10": (
+                ("A4", 1.5), ("A4", 0.5), ("G4", 0.5), ("F#4", 0.5),
+                ("E4", 0.5), ("D4", 0.5), ("C#4", 1), ("E4", 1),
+                ("D4", 2),
+            ),
+            "clap1-11": (
+                ("D5", 1), ("C5", 0.5), ("B4", 0.5), ("A4", 0.5),
+                ("G4", 0.5), ("F#4", 1), ("E4", 0.5), ("D4", 0.5),
+                ("F#4", 1), ("G4", 3),
+            ),
+            "clap1-12": (
+                ("C4", 1.5), ("D4", 0.5), ("E4", 1), ("G4", 1),
+                ("F4", 1), ("D4", 1), ("C4", 2),
+            ),
+            "clap1-13": (
+                ("G4", 1), ("A4", 1), ("B4", 1), ("C5", 0.5),
+                ("D5", 0.5), ("B4", 1.5), ("A4", 0.5), ("G4", 2),
+            ),
+            "clap1-14": (
+                ("G5", 0.5), ("A5", 0.5), ("G5", 1), ("G5", 1),
+                ("E5", 1.5), ("E5", 0.5), ("D5", 1), ("C5", 3),
+            ),
+            "clap1-15": (
+                ("Bb3", 1.5), ("D4", 0.5), ("F4", 2), ("G4", 1),
+                ("A4", 0.5), ("F4", 0.5), ("Bb4", 2),
+            ),
+            "clap1-16": (
+                ("D4", 0.5), ("F#4", 0.5), ("A4", 1), ("A4", 1),
+                ("B4", 1.5), ("G4", 0.5), ("E4", 1), ("D4", 3),
+            ),
+            "clap1-17": (
+                ("B4", 0.5), ("C5", 0.5), ("D5", 1), ("G5", 1),
+                ("D5", 1), ("C5", 1.5), ("A4", 0.5), ("B4", 2),
+            ),
+            "clap1-18": (
+                ("G4", 0.5), ("A4", 0.5), ("G4", 1), ("E4", 0.5),
+                ("G4", 0.5), ("F4", 0.5), ("G4", 0.5), ("F4", 1),
+                ("D4", 1), ("C4", 3),
+            ),
+            "clap1-19": (
+                ("D5", 1.5), ("C#5", 0.5), ("D5", 1), ("A4", 1),
+                ("B4", 1), ("A4", 0.5), ("G4", 0.5), ("F#4", 2),
+            ),
+            "clap1-20": (
+                ("G4", 0.5), ("A4", 0.5), ("B4", 1), ("C5", 1),
+                ("D5", 0.5), ("E5", 0.5), ("D5", 1.5), ("A4", 0.5),
+                ("B4", 3),
+            ),
+            "clap1-21": (
+                ("D5", 1), ("G4", 0.5), ("A4", 0.5), ("B4", 1),
+                ("C5", 1.5), ("F#4", 0.5), ("A4", 1), ("G4", 3),
+            ),
+            "clap1-22": (
+                ("C4", 1.5), ("E4", 0.5), ("G4", 1.5), ("E4", 0.5),
+                ("F4", 0.5), ("E4", 0.5), ("D4", 0.5), ("E4", 0.5),
+                ("C4", 2),
+            ),
+            "clap1-23": (
+                ("F5", 0.5), ("E5", 0.5), ("D5", 0.5), ("C5", 0.5),
+                ("Bb4", 1.5), ("C5", 0.5), ("A4", 0.5), ("Bb4", 0.5),
+                ("G4", 1), ("F4", 2),
+            ),
+        }
+
+        for example in examples[5:]:
+            self.assertEqual(example.status, "approved")
+            if example.id in expected_new_examples:
+                self.assertEqual(
+                    tuple((event.note, event.beats) for event in example.draft_events),
+                    expected_new_examples[example.id],
+                )
+            self.assertTrue((CLAPBACK_EXAMPLE_FOLDER / example.image_file).exists())
+
+    def test_level_1_playable_examples_include_only_approved_audio(self):
+        examples = get_playable_clapback_examples(1)
+
+        self.assertEqual(len(examples), 23)
+        self.assertEqual(examples[0].id, "clap1-1")
+        self.assertEqual(examples[1].id, "clap1-2")
+        self.assertEqual(examples[2].id, "clap1-3")
+        self.assertEqual(examples[3].id, "clap1-4")
+        self.assertEqual(examples[4].id, "clap1-5")
+        self.assertTrue((CLAPBACK_EXAMPLE_FOLDER / examples[0].image_file).exists())
+
+    def test_random_clapback_rotation_prefers_unplayed_examples(self):
+        examples = get_playable_clapback_examples(1)
+        chosen_index = choose_unplayed_example_index(
+            examples,
+            played_example_ids=[example.id for example in examples[:-1]],
+        )
+
+        self.assertEqual(chosen_index, 22)
+
+    def test_random_clapback_rotation_prefers_different_key(self):
+        examples = get_playable_clapback_examples(1)
+        f_major_ids = [
+            example.id
+            for example in examples
+            if example.key == "F major"
+        ]
+        chosen_index = choose_unplayed_example_index(
+            examples,
+            played_example_ids=[
+                example.id
+                for example in examples
+                if example.key != "F major"
+            ],
+            previous_key="F major",
+        )
+
+        self.assertIn(examples[chosen_index].id, f_major_ids)
+
+        chosen_index = choose_unplayed_example_index(
+            examples,
+            played_example_ids=[],
+            previous_key="F major",
+        )
+
+        self.assertNotEqual(examples[chosen_index].key, "F major")
+
+    def test_draft_audio_completes_written_length_and_repeats(self):
+        example = LEVEL_1_CLAPBACK_EXAMPLES[0]
+        waveform = create_clapback_waveform(example)
+        count_in_samples = int(SAMPLE_RATE * BEAT_SECONDS) * beats_per_measure(
+            example.time_signature
+        )
+        melody_samples = sum(
+            int(SAMPLE_RATE * event.beats * BEAT_SECONDS)
+            for event in events_with_completed_length(example)
+        )
+        rest_samples = int(
+            SAMPLE_RATE * beats_per_measure(example.time_signature) * BEAT_SECONDS
+        )
+
+        self.assertEqual(
+            len(waveform),
+            count_in_samples + melody_samples + rest_samples + melody_samples,
+        )
+
+    def test_create_clapback_question_creates_approved_audio(self):
+        question = create_clapback_question(1)
+
+        self.assertEqual(question.example_id, "clap1-1")
+        self.assertEqual(question.status, "approved")
+        self.assertTrue(
+            question.audio_file.endswith(f"_clapback_{CLAPBACK_AUDIO_VERSION}.wav")
+        )
+
+    def test_create_clapback_question_creates_all_approved_audio(self):
+        for index in range(23):
+            with self.subTest(index=index):
+                question = create_clapback_question(1, index)
+
+                self.assertEqual(question.example_id, f"clap1-{index + 1}")
+                self.assertEqual(question.status, "approved")
+                self.assertTrue(
+                    question.audio_file.endswith(
+                        f"_clapback_{CLAPBACK_AUDIO_VERSION}.wav"
+                    )
+                )
 
 
 if __name__ == "__main__":
