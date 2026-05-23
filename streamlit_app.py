@@ -14,6 +14,7 @@ from rcm_ear_training.curriculum import (
     CHORDS,
     CLAPBACK,
     INTERVALS,
+    PLAYBACK,
     current_levels,
     future_levels,
     get_level,
@@ -139,8 +140,14 @@ def render_test_menu(level):
     st.write("Choose a test:")
 
     for test in level.tests:
+        if level.interval_level == 5 and test.id == PLAYBACK:
+            continue
+
         disabled = test.status != IMPLEMENTED
-        button_label = test.label if not disabled else f"{test.label} (planned)"
+        if level.interval_level == 5 and test.id == CLAPBACK:
+            button_label = "Clapback / Playback"
+        else:
+            button_label = test.label if not disabled else f"{test.label} (planned)"
 
         if st.button(
             button_label,
@@ -368,7 +375,10 @@ def render_clapback_practice(level):
         reset_question()
         st.rerun()
 
-    st.subheader(f"{level.label} Clapback")
+    if level.interval_level == 5:
+        st.subheader(f"{level.label} Clapback / Playback")
+    else:
+        st.subheader(f"{level.label} Clapback")
 
     examples = get_playable_clapback_examples(level.interval_level)
 
@@ -407,11 +417,25 @@ def render_clapback_practice(level):
     st.write(f"Key: {question.key}")
 
     if audio_path.exists():
+        if question.playback_audio_file:
+            st.write("Clapback")
         with open(audio_path, "rb") as audio_file:
             st.audio(audio_file.read(), format="audio/wav")
     else:
         st.error("The draft audio file was not created.")
         st.stop()
+
+    if question.playback_audio_file:
+        playback_audio_path = AUDIO_FOLDER / question.playback_audio_file
+
+        st.write("Playback")
+
+        if playback_audio_path.exists():
+            with open(playback_audio_path, "rb") as audio_file:
+                st.audio(audio_file.read(), format="audio/wav")
+        else:
+            st.error("The playback audio file was not created.")
+            st.stop()
 
     if len(examples) > 1 and st.button("Next Example", use_container_width=True, type="primary"):
         st.session_state.clapback_played_ids = (

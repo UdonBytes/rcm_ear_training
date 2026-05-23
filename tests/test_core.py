@@ -13,13 +13,16 @@ from rcm_ear_training.clapback import (
     BEAT_SECONDS,
     CLAPBACK_AUDIO_VERSION,
     LEVEL_1_CLAPBACK_EXAMPLES,
+    LEVEL_5_CLAPBACK_PLAYBACK_EXAMPLES,
     beats_per_measure,
     choose_unplayed_example_index,
     create_clapback_question,
     create_clapback_waveform,
+    create_playback_waveform,
     events_with_completed_length,
     get_clapback_examples,
     get_playable_clapback_examples,
+    total_event_beats,
 )
 from rcm_ear_training.chords import get_chord_requirement
 from rcm_ear_training.chords import (
@@ -607,6 +610,109 @@ class ClapbackTests(unittest.TestCase):
         self.assertEqual(examples[4].id, "clap1-5")
         self.assertTrue((CLAPBACK_EXAMPLE_FOLDER / examples[0].image_file).exists())
 
+    def test_level_5_contains_approved_clapback_playback_examples(self):
+        examples = get_clapback_examples(5)
+
+        self.assertEqual(examples, LEVEL_5_CLAPBACK_PLAYBACK_EXAMPLES)
+        self.assertEqual(len(examples), 22)
+        self.assertEqual(examples[0].id, "clap5-1")
+        self.assertEqual(examples[0].key, "E major")
+        self.assertEqual(examples[0].starting_chord_label, "E major chord")
+        self.assertEqual(examples[0].starting_chord_notes, ("E4", "G#4", "B4", "E5"))
+        self.assertEqual(
+            tuple((event.note, event.beats) for event in examples[0].draft_events),
+            (
+                ("E4", 1.5),
+                ("G#4", 0.5),
+                ("B4", 0.5),
+                ("A4", 0.5),
+                ("G#4", 0.5),
+                ("F#4", 0.5),
+                ("G#4", 4),
+            ),
+        )
+        self.assertEqual(examples[-1].id, "clap5-22")
+        self.assertEqual(examples[-1].key, "A minor")
+        self.assertEqual(examples[-1].starting_chord_notes, ("A4", "C5", "E5", "A5"))
+
+        examples_by_id = {example.id: example for example in examples}
+        expected_corrections = {
+            "clap5-6": {
+                "starting_chord_notes": ("A4", "C#5", "E5", "A5"),
+            },
+            "clap5-7": {
+                "events": (
+                    ("B4", 1), ("E5", 1), ("G#4", 1), ("F#4", 1.5),
+                    ("G#4", 0.5), ("A4", 1), ("G#4", 3),
+                ),
+            },
+            "clap5-8": {
+                "events": (
+                    ("G4", 1), ("G4", 0.5), ("A4", 0.5), ("B4", 1),
+                    ("F#4", 2), ("B4", 1), ("E4", 3),
+                ),
+            },
+            "clap5-9": {
+                "starting_chord_notes": ("A4", "C5", "E5", "A5"),
+            },
+            "clap5-11": {
+                "starting_chord_notes": ("A4", "C5", "E5", "A5"),
+            },
+            "clap5-13": {
+                "starting_chord_notes": ("A4", "C5", "E5", "A5"),
+            },
+            "clap5-15": {
+                "starting_chord_notes": ("A4", "C5", "E5", "A5"),
+            },
+            "clap5-17": {
+                "starting_chord_notes": ("A4", "C5", "E5", "A5"),
+            },
+            "clap5-21": {
+                "events": (
+                    ("G#4", 1.5), ("A4", 0.5), ("G#4", 1), ("E5", 2),
+                    ("B4", 0.5), ("A4", 0.5), ("G#4", 3),
+                ),
+            },
+            "clap5-22": {
+                "starting_chord_notes": ("A4", "C5", "E5", "A5"),
+            },
+        }
+
+        for example_id, expectation in expected_corrections.items():
+            with self.subTest(correction=example_id):
+                example = examples_by_id[example_id]
+
+                if "starting_chord_notes" in expectation:
+                    self.assertEqual(
+                        example.starting_chord_notes,
+                        expectation["starting_chord_notes"],
+                    )
+
+                if "events" in expectation:
+                    self.assertEqual(
+                        tuple((event.note, event.beats) for event in example.draft_events),
+                        expectation["events"],
+                    )
+
+        for example in examples:
+            with self.subTest(example=example.id):
+                self.assertEqual(example.status, "approved")
+                self.assertNotEqual(example.starting_chord_notes, ())
+                self.assertTrue((CLAPBACK_EXAMPLE_FOLDER / example.image_file).exists())
+                self.assertEqual(
+                    total_event_beats(events_with_completed_length(example)),
+                    beats_per_measure(example.time_signature) * example.measures,
+                )
+
+    def test_level_5_clapback_and_playback_use_separate_audio_files(self):
+        question = create_clapback_question(5)
+
+        self.assertEqual(question.example_id, "clap5-1")
+        self.assertEqual(question.starting_chord_label, "E major chord")
+        self.assertIn("_clapback_", question.audio_file)
+        self.assertIn("_playback_", question.playback_audio_file)
+        self.assertNotEqual(question.audio_file, question.playback_audio_file)
+
     def test_random_clapback_rotation_prefers_unplayed_examples(self):
         examples = get_playable_clapback_examples(1)
         chosen_index = choose_unplayed_example_index(
@@ -661,6 +767,28 @@ class ClapbackTests(unittest.TestCase):
             len(waveform),
             count_in_samples + melody_samples + rest_samples + melody_samples,
         )
+
+    def test_level_5_clapback_and_playback_lengths(self):
+        example = LEVEL_5_CLAPBACK_PLAYBACK_EXAMPLES[0]
+        clapback_waveform = create_clapback_waveform(example)
+        playback_waveform = create_playback_waveform(example)
+        intro_samples = int(SAMPLE_RATE * BEAT_SECONDS * 3)
+        count_in_samples = int(SAMPLE_RATE * BEAT_SECONDS) * beats_per_measure(
+            example.time_signature
+        )
+        melody_samples = sum(
+            int(SAMPLE_RATE * event.beats * BEAT_SECONDS)
+            for event in events_with_completed_length(example)
+        )
+        rest_samples = int(
+            SAMPLE_RATE * beats_per_measure(example.time_signature) * BEAT_SECONDS
+        )
+
+        self.assertEqual(
+            len(clapback_waveform),
+            intro_samples + count_in_samples + melody_samples + rest_samples + melody_samples,
+        )
+        self.assertEqual(len(playback_waveform), intro_samples + melody_samples)
 
     def test_create_clapback_question_creates_approved_audio(self):
         question = create_clapback_question(1)

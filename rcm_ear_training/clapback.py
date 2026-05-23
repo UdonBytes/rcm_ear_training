@@ -32,6 +32,8 @@ class ClapbackExample:
     key: str
     image_file: str
     draft_events: tuple[MelodyEvent, ...] = ()
+    starting_chord_label: str = ""
+    starting_chord_notes: tuple[str, ...] = ()
     status: str = "approved"
     measures: int = 2
     audio_version: str = CLAPBACK_AUDIO_VERSION
@@ -46,6 +48,8 @@ class ClapbackQuestion:
     image_file: str
     status: str
     audio_file: str
+    playback_audio_file: str = ""
+    starting_chord_label: str = ""
 
 
 LEVEL_1_CLAPBACK_EXAMPLES = (
@@ -482,14 +486,372 @@ LEVEL_1_CLAPBACK_EXAMPLES = (
     ),
 )
 
+LEVEL_5_CLAPBACK_PLAYBACK_EXAMPLES = (
+    ClapbackExample(
+        id="clap5-1",
+        level=5,
+        time_signature="4/4",
+        key="E major",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="E major chord",
+        starting_chord_notes=("E4", "G#4", "B4", "E5"),
+        draft_events=(
+            MelodyEvent("E4", 1.5), MelodyEvent("G#4", 0.5),
+            MelodyEvent("B4", 0.5), MelodyEvent("A4", 0.5),
+            MelodyEvent("G#4", 0.5), MelodyEvent("F#4", 0.5),
+            MelodyEvent("G#4", 4),
+        ),
+        measures=2,
+    ),
+    ClapbackExample(
+        id="clap5-2",
+        level=5,
+        time_signature="4/4",
+        key="A major",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="A major chord",
+        starting_chord_notes=("A3", "C#4", "E4", "A4"),
+        draft_events=(
+            MelodyEvent("C#4", 0.5), MelodyEvent("D4", 0.5),
+            MelodyEvent("E4", 0.5), MelodyEvent("D4", 0.5),
+            MelodyEvent("C#4", 1.5), MelodyEvent("E4", 0.5),
+            MelodyEvent("A4", 4),
+        ),
+        measures=2,
+    ),
+    ClapbackExample(
+        id="clap5-3",
+        level=5,
+        time_signature="4/4",
+        key="E major",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="E major chord",
+        starting_chord_notes=("E4", "G#4", "B4", "E5"),
+        draft_events=(
+            MelodyEvent("E5", 1), MelodyEvent("B4", 0.5),
+            MelodyEvent("A4", 0.5), MelodyEvent("G#4", 0.5),
+            MelodyEvent("A4", 0.5), MelodyEvent("B4", 1),
+            MelodyEvent("E4", 4),
+        ),
+        measures=2,
+    ),
+    ClapbackExample(
+        id="clap5-4",
+        level=5,
+        time_signature="4/4",
+        key="E minor",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="E minor chord",
+        starting_chord_notes=("E4", "G4", "B4", "E5"),
+        draft_events=(
+            MelodyEvent("G4", 1.5), MelodyEvent("B4", 0.5),
+            MelodyEvent("E4", 0.5), MelodyEvent("F#4", 0.5),
+            MelodyEvent("G4", 1), MelodyEvent("A4", 1),
+            MelodyEvent("B4", 1), MelodyEvent("E5", 2),
+        ),
+        measures=2,
+    ),
+    ClapbackExample(
+        id="clap5-5",
+        level=5,
+        time_signature="3/4",
+        key="E major",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="E major chord",
+        starting_chord_notes=("E4", "G#4", "B4", "E5"),
+        draft_events=(
+            MelodyEvent("G#4", 1), MelodyEvent("A4", 1),
+            MelodyEvent("G#4", 0.5), MelodyEvent("F#4", 0.5),
+            MelodyEvent("E4", 2), MelodyEvent("B4", 1),
+            MelodyEvent("E5", 3),
+        ),
+        measures=3,
+    ),
+    ClapbackExample(
+        id="clap5-6",
+        level=5,
+        time_signature="4/4",
+        key="A major",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="A major chord",
+        starting_chord_notes=("A4", "C#5", "E5", "A5"),
+        draft_events=(
+            MelodyEvent("E5", 0.5), MelodyEvent("D5", 0.5),
+            MelodyEvent("C#5", 0.5), MelodyEvent("B4", 0.5),
+            MelodyEvent("A4", 1), MelodyEvent("A5", 1),
+            MelodyEvent("E5", 4),
+        ),
+        measures=2,
+    ),
+    ClapbackExample(
+        id="clap5-7",
+        level=5,
+        time_signature="3/4",
+        key="E major",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="E major chord",
+        starting_chord_notes=("E4", "G#4", "B4", "E5"),
+        draft_events=(
+            MelodyEvent("B4", 1), MelodyEvent("E5", 1),
+            MelodyEvent("G#4", 1), MelodyEvent("F#4", 1.5),
+            MelodyEvent("G#4", 0.5), MelodyEvent("A4", 1),
+            MelodyEvent("G#4", 3),
+        ),
+        measures=3,
+    ),
+    ClapbackExample(
+        id="clap5-8",
+        level=5,
+        time_signature="3/4",
+        key="E minor",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="E minor chord",
+        starting_chord_notes=("E4", "G4", "B4", "E5"),
+        draft_events=(
+            MelodyEvent("G4", 1), MelodyEvent("G4", 0.5),
+            MelodyEvent("A4", 0.5), MelodyEvent("B4", 1),
+            MelodyEvent("F#4", 2), MelodyEvent("B4", 1),
+            MelodyEvent("E4", 3),
+        ),
+        measures=3,
+    ),
+    ClapbackExample(
+        id="clap5-9",
+        level=5,
+        time_signature="3/4",
+        key="A minor",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="A minor chord",
+        starting_chord_notes=("A4", "C5", "E5", "A5"),
+        draft_events=(
+            MelodyEvent("E5", 2), MelodyEvent("A4", 1),
+            MelodyEvent("B4", 0.5), MelodyEvent("C5", 0.5),
+            MelodyEvent("D5", 1.5), MelodyEvent("E5", 0.5),
+            MelodyEvent("A5", 3),
+        ),
+        measures=3,
+    ),
+    ClapbackExample(
+        id="clap5-10",
+        level=5,
+        time_signature="4/4",
+        key="A major",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="A major chord",
+        starting_chord_notes=("A3", "C#4", "E4", "A4"),
+        draft_events=(
+            MelodyEvent("A4", 1), MelodyEvent("D4", 0.5),
+            MelodyEvent("C#4", 0.5), MelodyEvent("D4", 1),
+            MelodyEvent("B3", 1), MelodyEvent("A3", 1.5),
+            MelodyEvent("C#4", 0.5), MelodyEvent("E4", 2),
+        ),
+        measures=2,
+    ),
+    ClapbackExample(
+        id="clap5-11",
+        level=5,
+        time_signature="3/4",
+        key="A minor",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="A minor chord",
+        starting_chord_notes=("A4", "C5", "E5", "A5"),
+        draft_events=(
+            MelodyEvent("A4", 2), MelodyEvent("E5", 1),
+            MelodyEvent("D5", 0.5), MelodyEvent("C5", 0.5),
+            MelodyEvent("B4", 1), MelodyEvent("C5", 1),
+            MelodyEvent("A4", 3),
+        ),
+        measures=3,
+    ),
+    ClapbackExample(
+        id="clap5-12",
+        level=5,
+        time_signature="4/4",
+        key="E minor",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="E minor chord",
+        starting_chord_notes=("E4", "G4", "B4", "E5"),
+        draft_events=(
+            MelodyEvent("B4", 1), MelodyEvent("E5", 1),
+            MelodyEvent("B4", 0.5), MelodyEvent("A4", 0.5),
+            MelodyEvent("F#4", 0.5), MelodyEvent("G4", 0.5),
+            MelodyEvent("E4", 4),
+        ),
+        measures=2,
+    ),
+    ClapbackExample(
+        id="clap5-13",
+        level=5,
+        time_signature="3/4",
+        key="A minor",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="A minor chord",
+        starting_chord_notes=("A4", "C5", "E5", "A5"),
+        draft_events=(
+            MelodyEvent("C5", 1), MelodyEvent("E5", 1),
+            MelodyEvent("A4", 0.5), MelodyEvent("B4", 0.5),
+            MelodyEvent("C5", 1.5), MelodyEvent("D5", 0.5),
+            MelodyEvent("E5", 1), MelodyEvent("A5", 3),
+        ),
+        measures=3,
+    ),
+    ClapbackExample(
+        id="clap5-14",
+        level=5,
+        time_signature="4/4",
+        key="A major",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="A major chord",
+        starting_chord_notes=("A3", "C#4", "E4", "A4"),
+        draft_events=(
+            MelodyEvent("C#4", 0.5), MelodyEvent("D4", 0.5),
+            MelodyEvent("E4", 1), MelodyEvent("A4", 1),
+            MelodyEvent("E4", 0.5), MelodyEvent("B3", 0.5),
+            MelodyEvent("C#4", 4),
+        ),
+        measures=2,
+    ),
+    ClapbackExample(
+        id="clap5-15",
+        level=5,
+        time_signature="4/4",
+        key="A minor",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="A minor chord",
+        starting_chord_notes=("A4", "C5", "E5", "A5"),
+        draft_events=(
+            MelodyEvent("A4", 1.5), MelodyEvent("C5", 0.5),
+            MelodyEvent("B4", 0.5), MelodyEvent("D5", 0.5),
+            MelodyEvent("C5", 0.5), MelodyEvent("E5", 0.5),
+            MelodyEvent("A5", 4),
+        ),
+        measures=2,
+    ),
+    ClapbackExample(
+        id="clap5-16",
+        level=5,
+        time_signature="4/4",
+        key="E minor",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="E minor chord",
+        starting_chord_notes=("E4", "G4", "B4", "E5"),
+        draft_events=(
+            MelodyEvent("G4", 1), MelodyEvent("B4", 1),
+            MelodyEvent("E5", 1.5), MelodyEvent("B4", 0.5),
+            MelodyEvent("A4", 0.5), MelodyEvent("B4", 0.5),
+            MelodyEvent("F#4", 1), MelodyEvent("E4", 2),
+        ),
+        measures=2,
+    ),
+    ClapbackExample(
+        id="clap5-17",
+        level=5,
+        time_signature="3/4",
+        key="A minor",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="A minor chord",
+        starting_chord_notes=("A4", "C5", "E5", "A5"),
+        draft_events=(
+            MelodyEvent("A5", 2), MelodyEvent("E5", 1),
+            MelodyEvent("B4", 0.5), MelodyEvent("C5", 0.5),
+            MelodyEvent("D5", 1), MelodyEvent("E5", 1),
+            MelodyEvent("A4", 3),
+        ),
+        measures=3,
+    ),
+    ClapbackExample(
+        id="clap5-18",
+        level=5,
+        time_signature="3/4",
+        key="A major",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="A major chord",
+        starting_chord_notes=("A3", "C#4", "E4", "A4"),
+        draft_events=(
+            MelodyEvent("E4", 1), MelodyEvent("E4", 0.5),
+            MelodyEvent("A4", 0.5), MelodyEvent("E4", 1),
+            MelodyEvent("D4", 1.5), MelodyEvent("B3", 0.5),
+            MelodyEvent("C#4", 1), MelodyEvent("A3", 3),
+        ),
+        measures=3,
+    ),
+    ClapbackExample(
+        id="clap5-19",
+        level=5,
+        time_signature="3/4",
+        key="E major",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="E major chord",
+        starting_chord_notes=("E4", "G#4", "B4", "E5"),
+        draft_events=(
+            MelodyEvent("E4", 2), MelodyEvent("G#4", 1),
+            MelodyEvent("B4", 1.5), MelodyEvent("E5", 0.5),
+            MelodyEvent("B4", 1), MelodyEvent("A4", 2),
+            MelodyEvent("F#4", 1), MelodyEvent("G#4", 3),
+        ),
+        measures=4,
+    ),
+    ClapbackExample(
+        id="clap5-20",
+        level=5,
+        time_signature="3/4",
+        key="E minor",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="E minor chord",
+        starting_chord_notes=("E4", "G4", "B4", "E5"),
+        draft_events=(
+            MelodyEvent("E4", 1), MelodyEvent("E4", 1.5),
+            MelodyEvent("F#4", 0.5), MelodyEvent("G4", 0.5),
+            MelodyEvent("A4", 0.5), MelodyEvent("B4", 1),
+            MelodyEvent("D#5", 1), MelodyEvent("E5", 3),
+        ),
+        measures=3,
+    ),
+    ClapbackExample(
+        id="clap5-21",
+        level=5,
+        time_signature="3/4",
+        key="E major",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="E major chord",
+        starting_chord_notes=("E4", "G#4", "B4", "E5"),
+        draft_events=(
+            MelodyEvent("G#4", 1.5), MelodyEvent("A4", 0.5),
+            MelodyEvent("G#4", 1), MelodyEvent("E5", 2),
+            MelodyEvent("B4", 0.5), MelodyEvent("A4", 0.5),
+            MelodyEvent("G#4", 3),
+        ),
+        measures=3,
+    ),
+    ClapbackExample(
+        id="clap5-22",
+        level=5,
+        time_signature="4/4",
+        key="A minor",
+        image_file="level_5/level5-clapback-playback-1-to-22.png",
+        starting_chord_label="A minor chord",
+        starting_chord_notes=("A4", "C5", "E5", "A5"),
+        draft_events=(
+            MelodyEvent("A5", 1), MelodyEvent("E5", 1),
+            MelodyEvent("E5", 1.5), MelodyEvent("C5", 0.5),
+            MelodyEvent("B4", 0.5), MelodyEvent("C5", 0.5),
+            MelodyEvent("D5", 1), MelodyEvent("C5", 2),
+        ),
+        measures=2,
+    ),
+)
+
 
 def get_clapback_examples(level):
     """Return source clapback examples for a level."""
 
-    if level != 1:
-        return ()
+    if level == 1:
+        return LEVEL_1_CLAPBACK_EXAMPLES
 
-    return LEVEL_1_CLAPBACK_EXAMPLES
+    if level == 5:
+        return LEVEL_5_CLAPBACK_PLAYBACK_EXAMPLES
+
+    return ()
 
 
 def get_playable_clapback_examples(level):
@@ -604,19 +966,67 @@ def create_melody_audio(example):
     return np.concatenate(segments)
 
 
+def create_solid_chord_audio(notes, duration=BEAT_SECONDS * 2):
+    """Create a solid starting chord trimmed to a predictable duration."""
+
+    if not notes:
+        return np.array([], dtype=float)
+
+    chord_audio = np.zeros(int(config.SAMPLE_RATE * duration))
+
+    for note in notes:
+        chord_audio += trim_or_pad_audio(load_piano_sample(note), duration)
+
+    peak = np.max(np.abs(chord_audio))
+
+    if peak > 0:
+        chord_audio = chord_audio / peak
+
+    return chord_audio * 0.75
+
+
+def create_starting_chord_intro(example):
+    """Create the starting chord with a small breath before the test begins."""
+
+    if not example.starting_chord_notes:
+        return np.array([], dtype=float)
+
+    return np.concatenate(
+        [
+            create_solid_chord_audio(example.starting_chord_notes),
+            create_silence(BEAT_SECONDS),
+        ]
+    )
+
+
 def create_clapback_waveform(example):
     """Create count-in, melody, one-bar rest, then melody again."""
 
+    intro = create_starting_chord_intro(example)
     count_in = create_count_in(example.time_signature)
     melody = create_melody_audio(example)
     rest = create_silence(beats_per_measure(example.time_signature) * BEAT_SECONDS)
-    return np.concatenate([count_in, melody, rest, melody])
+    return np.concatenate([intro, count_in, melody, rest, melody])
+
+
+def create_playback_waveform(example):
+    """Create starting chord and one more playback of the same example."""
+
+    intro = create_starting_chord_intro(example)
+    melody = create_melody_audio(example)
+    return np.concatenate([intro, melody])
 
 
 def create_clapback_audio(example, file_path):
     """Write a clapback WAV."""
 
     sf.write(file_path, create_clapback_waveform(example), config.SAMPLE_RATE)
+
+
+def create_playback_audio(example, file_path):
+    """Write a playback WAV."""
+
+    sf.write(file_path, create_playback_waveform(example), config.SAMPLE_RATE)
 
 
 def create_clapback_question(level, example_index=0):
@@ -633,9 +1043,16 @@ def create_clapback_question(level, example_index=0):
         f"level_{level}_{example.id}_clapback_{example.audio_version}.wav"
     )
     file_path = config.CLAPBACK_AUDIO_FOLDER / filename
+    playback_filename = make_safe_filename(
+        f"level_{level}_{example.id}_playback_{example.audio_version}.wav"
+    )
+    playback_file_path = config.CLAPBACK_AUDIO_FOLDER / playback_filename
 
     if not file_path.exists():
         create_clapback_audio(example, file_path)
+
+    if example.starting_chord_notes and not playback_file_path.exists():
+        create_playback_audio(example, playback_file_path)
 
     return ClapbackQuestion(
         level=level,
@@ -645,4 +1062,8 @@ def create_clapback_question(level, example_index=0):
         image_file=example.image_file,
         status=example.status,
         audio_file=f"clapback/{filename}",
+        playback_audio_file=(
+            f"clapback/{playback_filename}" if example.starting_chord_notes else ""
+        ),
+        starting_chord_label=example.starting_chord_label,
     )
