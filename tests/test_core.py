@@ -15,6 +15,7 @@ from rcm_ear_training.clapback import (
     LEVEL_1_CLAPBACK_EXAMPLES,
     LEVEL_1_PLAYBACK_EXAMPLES,
     LEVEL_2_PLAYBACK_EXAMPLES,
+    LEVEL_3_PLAYBACK_EXAMPLES,
     LEVEL_5_CLAPBACK_PLAYBACK_EXAMPLES,
     beats_per_measure,
     choose_unplayed_example_index,
@@ -742,6 +743,81 @@ class ClapbackTests(unittest.TestCase):
         self.assertEqual(len(examples), 66)
         self.assertEqual(examples[0].id, "play2-1a")
 
+    def test_level_3_contains_approved_playback_examples(self):
+        examples = get_playback_examples(3)
+
+        self.assertEqual(examples, LEVEL_3_PLAYBACK_EXAMPLES)
+        self.assertEqual(len(examples), 28)
+        self.assertEqual(examples[0].id, "play3-16a")
+        self.assertEqual(examples[0].key, "F major")
+        self.assertEqual(examples[0].starting_chord_notes, ("F4", "A4", "C5"))
+        self.assertEqual(
+            tuple((event.note, event.beats) for event in examples[0].draft_events),
+            (
+                ("A4", 1),
+                ("C5", 1),
+                ("F4", 1),
+                ("G4", 1),
+                ("A4", 4),
+            ),
+        )
+
+        examples_by_id = {example.id: example for example in examples}
+        expected_triads = {
+            "play3-16a": ("F4", "A4", "C5"),
+            "play3-16b": ("G4", "Bb4", "D5"),
+            "play3-16c": ("D4", "F#4", "A4"),
+            "play3-16d": ("D4", "F4", "A4"),
+        }
+
+        for example_id, expected_triad in expected_triads.items():
+            with self.subTest(triad=example_id):
+                self.assertEqual(
+                    examples_by_id[example_id].starting_chord_notes,
+                    expected_triad,
+                )
+
+        self.assertEqual(examples_by_id["play3-18a"].time_signature, "3/4")
+        self.assertEqual(
+            tuple((event.note, event.beats) for event in examples_by_id["play3-18a"].draft_events),
+            (
+                ("F4", 0.5),
+                ("G4", 0.5),
+                ("A4", 1),
+                ("Bb4", 0.5),
+                ("C5", 0.5),
+                ("F4", 3),
+            ),
+        )
+        self.assertEqual(examples[-1].id, "play3-22d")
+        self.assertEqual(
+            tuple((event.note, event.beats) for event in examples[-1].draft_events),
+            (
+                ("D4", 1),
+                ("E4", 1),
+                ("F4", 1),
+                ("A4", 0.5),
+                ("F4", 0.5),
+                ("D4", 4),
+            ),
+        )
+
+        for example in examples:
+            with self.subTest(example=example.id):
+                self.assertEqual(example.status, "approved")
+                self.assertEqual(example.measures, 2)
+                self.assertEqual(example.playback_repetitions, 2)
+                self.assertEqual(
+                    total_event_beats(events_with_completed_length(example)),
+                    beats_per_measure(example.time_signature) * example.measures,
+                )
+
+    def test_level_3_playable_playback_examples(self):
+        examples = get_playable_playback_examples(3)
+
+        self.assertEqual(len(examples), 28)
+        self.assertEqual(examples[0].id, "play3-16a")
+
     def test_level_5_contains_approved_clapback_playback_examples(self):
         examples = get_clapback_examples(5)
 
@@ -857,6 +933,14 @@ class ClapbackTests(unittest.TestCase):
         question = create_playback_question(2)
 
         self.assertEqual(question.example_id, "play2-1a")
+        self.assertEqual(question.time_signature, "4/4")
+        self.assertEqual(question.key, "F major")
+        self.assertIn("_playback_", question.audio_file)
+
+    def test_create_level_3_playback_question_creates_audio(self):
+        question = create_playback_question(3)
+
+        self.assertEqual(question.example_id, "play3-16a")
         self.assertEqual(question.time_signature, "4/4")
         self.assertEqual(question.key, "F major")
         self.assertIn("_playback_", question.audio_file)

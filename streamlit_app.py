@@ -152,7 +152,7 @@ def render_test_menu(level):
             continue
 
         disabled = test.status != IMPLEMENTED
-        if level.interval_level in (1, 2) and test.id == PLAYBACK:
+        if level.interval_level in (1, 2, 3) and test.id == PLAYBACK:
             disabled = False
 
         if level.interval_level == 5 and test.id == CLAPBACK:
