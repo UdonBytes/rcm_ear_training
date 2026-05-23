@@ -24,7 +24,7 @@ from rcm_ear_training.theory import get_level_description
 
 
 st.set_page_config(
-    page_title="RCM Ear Training",
+    page_title="RCM Ear Tests",
     layout="centered",
 )
 
@@ -428,7 +428,7 @@ def main():
 
     initialize_session_state()
 
-    st.title("RCM Ear Training")
+    st.title("RCM Ear Tests")
     st.caption("Choose a level, then choose a musicianship test.")
 
     if st.session_state.selected_level_id is None:

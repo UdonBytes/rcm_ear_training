@@ -14,7 +14,7 @@ HOME_PAGE = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>RCM Ear Training</title>
+    <title>RCM Ear Tests</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -78,7 +78,7 @@ HOME_PAGE = """
 </head>
 <body>
     <div class="card">
-        <h1>RCM Ear Training</h1>
+        <h1>RCM Ear Tests</h1>
         <p class="muted">Choose your level to practise interval identification.</p>
 
         <div class="level-grid">

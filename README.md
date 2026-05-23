@@ -1,4 +1,4 @@
-# RCM Ear Training Practice App
+# RCM Ear Tests
 
 A simple ear training practice app for RCM students.
 
