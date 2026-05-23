@@ -7,7 +7,9 @@ from rcm_ear_training.chords import create_chord_question
 from rcm_ear_training.clapback import (
     choose_unplayed_example_index,
     create_clapback_question,
+    create_playback_question,
     get_playable_clapback_examples,
+    get_playable_playback_examples,
 )
 from rcm_ear_training.curriculum import (
     IMPLEMENTED,
@@ -72,6 +74,9 @@ def reset_test():
     st.session_state.clapback_example_index = 0
     st.session_state.clapback_played_ids = []
     st.session_state.clapback_previous_key = None
+    st.session_state.playback_example_index = 0
+    st.session_state.playback_played_ids = []
+    st.session_state.playback_previous_key = None
     reset_question()
 
 
@@ -91,6 +96,9 @@ def initialize_session_state():
         "clapback_example_index": 0,
         "clapback_played_ids": [],
         "clapback_previous_key": None,
+        "playback_example_index": 0,
+        "playback_played_ids": [],
+        "playback_previous_key": None,
     }
 
     for key, value in defaults.items():
@@ -144,6 +152,9 @@ def render_test_menu(level):
             continue
 
         disabled = test.status != IMPLEMENTED
+        if level.interval_level == 1 and test.id == PLAYBACK:
+            disabled = False
+
         if level.interval_level == 5 and test.id == CLAPBACK:
             button_label = "Clapback / Playback"
         else:
@@ -446,6 +457,68 @@ def render_clapback_practice(level):
         st.rerun()
 
 
+def render_playback_practice(level):
+    """Render approved playback examples."""
+
+    if st.button("Back to Tests"):
+        st.session_state.selected_test_id = None
+        reset_question()
+        st.rerun()
+
+    st.subheader(f"{level.label} Playback")
+
+    examples = get_playable_playback_examples(level.interval_level)
+
+    if not examples:
+        st.info("No approved playback examples have been added for this level yet.")
+        return
+
+    if st.session_state.current_question is None:
+        played_ids = st.session_state.playback_played_ids
+
+        if len(set(played_ids)) >= len(examples):
+            played_ids = []
+
+        st.session_state.playback_example_index = choose_unplayed_example_index(
+            examples,
+            played_ids,
+            st.session_state.playback_previous_key,
+        )
+
+    selected_example = examples[st.session_state.playback_example_index % len(examples)]
+    stale_question = st.session_state.current_question is not None and (
+        st.session_state.current_question.example_id != selected_example.id
+        or selected_example.audio_version not in st.session_state.current_question.audio_file
+    )
+
+    if st.session_state.current_question is None or stale_question:
+        st.session_state.current_question = create_playback_question(
+            level.interval_level,
+            st.session_state.playback_example_index,
+        )
+
+    question = st.session_state.current_question
+    audio_path = AUDIO_FOLDER / question.audio_file
+
+    st.write(f"Time Signature: {question.time_signature}")
+    st.write(f"Key: {question.key.title()}")
+
+    if audio_path.exists():
+        with open(audio_path, "rb") as audio_file:
+            st.audio(audio_file.read(), format="audio/wav")
+    else:
+        st.error("The playback audio file was not created.")
+        st.stop()
+
+    if len(examples) > 1 and st.button("Next Example", use_container_width=True, type="primary"):
+        st.session_state.playback_played_ids = (
+            st.session_state.playback_played_ids + [question.example_id]
+        )[-len(examples):]
+        st.session_state.playback_previous_key = question.key
+        reset_question()
+        st.rerun()
+
+
 def main():
     """Run the Streamlit app."""
 
@@ -474,6 +547,10 @@ def main():
 
     if st.session_state.selected_test_id == CLAPBACK:
         render_clapback_practice(level)
+        return
+
+    if st.session_state.selected_test_id == PLAYBACK:
+        render_playback_practice(level)
         return
 
     st.info("This test is planned but not implemented yet.")

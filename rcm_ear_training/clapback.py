@@ -34,6 +34,7 @@ class ClapbackExample:
     draft_events: tuple[MelodyEvent, ...] = ()
     starting_chord_label: str = ""
     starting_chord_notes: tuple[str, ...] = ()
+    playback_repetitions: int = 1
     status: str = "approved"
     measures: int = 2
     audio_version: str = CLAPBACK_AUDIO_VERSION
@@ -50,6 +51,32 @@ class ClapbackQuestion:
     audio_file: str
     playback_audio_file: str = ""
     starting_chord_label: str = ""
+
+
+def create_events(notes, beats):
+    """Create melody events from matching note and beat sequences."""
+
+    return tuple(
+        MelodyEvent(note, beat)
+        for note, beat in zip(notes, beats)
+    )
+
+
+def create_level_1_playback_example(identifier, key, chord_notes, notes):
+    """Create a level 1 playback example with the shared rhythm."""
+
+    return ClapbackExample(
+        id=f"play1-{identifier}",
+        level=1,
+        time_signature="4/4",
+        key=key,
+        image_file="",
+        starting_chord_label=f"{key.title()} chord",
+        starting_chord_notes=chord_notes,
+        playback_repetitions=2,
+        draft_events=create_events(notes, (1, 1, 1, 1, 4)),
+        measures=2,
+    )
 
 
 LEVEL_1_CLAPBACK_EXAMPLES = (
@@ -486,6 +513,79 @@ LEVEL_1_CLAPBACK_EXAMPLES = (
     ),
 )
 
+C_MAJOR_TRIAD_C4 = ("C4", "E4", "G4")
+G_MAJOR_TRIAD_G4 = ("G4", "B4", "D5")
+A_MINOR_TRIAD_A4 = ("A4", "C5", "E5")
+
+LEVEL_1_PLAYBACK_EXAMPLES = (
+    create_level_1_playback_example("1a", "C major", C_MAJOR_TRIAD_C4, ("C4", "D4", "E4", "G4", "E4")),
+    create_level_1_playback_example("1b", "G major", G_MAJOR_TRIAD_G4, ("G4", "A4", "B4", "D5", "B4")),
+    create_level_1_playback_example("1c", "A minor", A_MINOR_TRIAD_A4, ("A4", "B4", "C5", "E5", "C5")),
+    create_level_1_playback_example("2a", "C major", C_MAJOR_TRIAD_C4, ("C4", "E4", "G4", "E4", "C4")),
+    create_level_1_playback_example("2b", "G major", G_MAJOR_TRIAD_G4, ("G4", "B4", "D5", "B4", "G4")),
+    create_level_1_playback_example("2c", "A minor", A_MINOR_TRIAD_A4, ("A4", "C5", "E5", "C5", "A4")),
+    create_level_1_playback_example("3a", "C major", C_MAJOR_TRIAD_C4, ("C4", "E4", "E4", "F4", "G4")),
+    create_level_1_playback_example("3b", "G major", G_MAJOR_TRIAD_G4, ("G4", "B4", "B4", "C5", "D5")),
+    create_level_1_playback_example("3c", "A minor", A_MINOR_TRIAD_A4, ("A4", "C5", "C5", "D5", "E5")),
+    create_level_1_playback_example("4a", "C major", C_MAJOR_TRIAD_C4, ("C4", "D4", "D4", "F4", "G4")),
+    create_level_1_playback_example("4b", "G major", G_MAJOR_TRIAD_G4, ("G4", "A4", "A4", "C5", "D5")),
+    create_level_1_playback_example("4c", "A minor", A_MINOR_TRIAD_A4, ("A4", "B4", "B4", "D5", "E5")),
+    create_level_1_playback_example("5a", "C major", C_MAJOR_TRIAD_C4, ("C4", "E4", "F4", "G4", "E4")),
+    create_level_1_playback_example("5b", "G major", G_MAJOR_TRIAD_G4, ("G4", "B4", "C5", "D5", "B4")),
+    create_level_1_playback_example("5c", "A minor", A_MINOR_TRIAD_A4, ("A4", "C5", "D5", "E5", "C5")),
+    create_level_1_playback_example("6a", "C major", C_MAJOR_TRIAD_C4, ("G4", "G4", "F4", "D4", "C4")),
+    create_level_1_playback_example("6b", "G major", G_MAJOR_TRIAD_G4, ("D5", "D5", "C5", "A4", "G4")),
+    create_level_1_playback_example("6c", "A minor", A_MINOR_TRIAD_A4, ("E5", "E5", "D5", "B4", "A4")),
+    create_level_1_playback_example("7a", "C major", C_MAJOR_TRIAD_C4, ("C4", "D4", "D4", "E4", "G4")),
+    create_level_1_playback_example("7b", "G major", G_MAJOR_TRIAD_G4, ("G4", "A4", "A4", "B4", "D5")),
+    create_level_1_playback_example("7c", "A minor", A_MINOR_TRIAD_A4, ("A4", "B4", "B4", "C5", "E5")),
+    create_level_1_playback_example("8a", "C major", C_MAJOR_TRIAD_C4, ("G4", "F4", "E4", "E4", "C4")),
+    create_level_1_playback_example("8b", "G major", G_MAJOR_TRIAD_G4, ("D5", "C5", "B4", "B4", "G4")),
+    create_level_1_playback_example("8c", "A minor", A_MINOR_TRIAD_A4, ("E5", "D5", "C5", "C5", "A4")),
+    create_level_1_playback_example("9a", "C major", C_MAJOR_TRIAD_C4, ("C4", "E4", "F4", "E4", "C4")),
+    create_level_1_playback_example("9b", "G major", G_MAJOR_TRIAD_G4, ("G4", "B4", "C5", "B4", "G4")),
+    create_level_1_playback_example("9c", "A minor", A_MINOR_TRIAD_A4, ("A4", "C5", "D5", "C5", "A4")),
+    create_level_1_playback_example("10a", "C major", C_MAJOR_TRIAD_C4, ("C4", "C4", "D4", "F4", "G4")),
+    create_level_1_playback_example("10b", "G major", G_MAJOR_TRIAD_G4, ("G4", "G4", "A4", "C5", "D5")),
+    create_level_1_playback_example("10c", "A minor", A_MINOR_TRIAD_A4, ("A4", "A4", "B4", "D5", "E5")),
+    create_level_1_playback_example("11a", "C major", C_MAJOR_TRIAD_C4, ("G4", "E4", "D4", "E4", "C4")),
+    create_level_1_playback_example("11b", "G major", G_MAJOR_TRIAD_G4, ("D5", "B4", "A4", "B4", "G4")),
+    create_level_1_playback_example("11c", "A minor", A_MINOR_TRIAD_A4, ("E5", "C5", "B4", "C5", "A4")),
+    create_level_1_playback_example("12a", "C major", C_MAJOR_TRIAD_C4, ("G4", "E4", "D4", "C4", "E4")),
+    create_level_1_playback_example("12b", "G major", G_MAJOR_TRIAD_G4, ("D5", "B4", "A4", "G4", "B4")),
+    create_level_1_playback_example("12c", "A minor", A_MINOR_TRIAD_A4, ("E5", "C5", "B4", "A4", "C5")),
+    create_level_1_playback_example("13a", "C major", C_MAJOR_TRIAD_C4, ("G4", "E4", "C4", "D4", "E4")),
+    create_level_1_playback_example("13b", "G major", G_MAJOR_TRIAD_G4, ("D5", "B4", "G4", "A4", "B4")),
+    create_level_1_playback_example("13c", "A minor", A_MINOR_TRIAD_A4, ("E5", "C5", "A4", "B4", "C5")),
+    create_level_1_playback_example("14a", "C major", C_MAJOR_TRIAD_C4, ("G4", "F4", "F4", "E4", "C4")),
+    create_level_1_playback_example("14b", "G major", G_MAJOR_TRIAD_G4, ("D5", "C5", "C5", "B4", "G4")),
+    create_level_1_playback_example("14c", "A minor", A_MINOR_TRIAD_A4, ("E5", "D5", "D5", "C5", "A4")),
+    create_level_1_playback_example("15a", "C major", C_MAJOR_TRIAD_C4, ("C4", "D4", "G4", "F4", "E4")),
+    create_level_1_playback_example("15b", "G major", G_MAJOR_TRIAD_G4, ("G4", "A4", "D5", "C5", "B4")),
+    create_level_1_playback_example("15c", "A minor", A_MINOR_TRIAD_A4, ("A4", "B4", "E5", "D5", "C5")),
+    create_level_1_playback_example("16a", "C major", C_MAJOR_TRIAD_C4, ("C4", "D4", "F4", "G4", "E4")),
+    create_level_1_playback_example("16b", "G major", G_MAJOR_TRIAD_G4, ("G4", "A4", "C5", "D5", "B4")),
+    create_level_1_playback_example("16c", "A minor", A_MINOR_TRIAD_A4, ("A4", "B4", "D5", "E5", "C5")),
+    create_level_1_playback_example("17a", "C major", C_MAJOR_TRIAD_C4, ("C4", "E4", "E4", "G4", "E4")),
+    create_level_1_playback_example("17b", "G major", G_MAJOR_TRIAD_G4, ("G4", "B4", "B4", "D5", "B4")),
+    create_level_1_playback_example("17c", "A minor", A_MINOR_TRIAD_A4, ("A4", "C5", "C5", "E5", "C5")),
+    create_level_1_playback_example("18a", "C major", C_MAJOR_TRIAD_C4, ("C4", "D4", "F4", "D4", "E4")),
+    create_level_1_playback_example("18b", "G major", G_MAJOR_TRIAD_G4, ("G4", "A4", "C5", "A4", "B4")),
+    create_level_1_playback_example("18c", "A minor", A_MINOR_TRIAD_A4, ("A4", "B4", "D5", "B4", "C5")),
+    create_level_1_playback_example("19a", "C major", C_MAJOR_TRIAD_C4, ("G4", "G4", "F4", "E4", "C4")),
+    create_level_1_playback_example("19b", "G major", G_MAJOR_TRIAD_G4, ("D5", "D5", "C5", "B4", "G4")),
+    create_level_1_playback_example("19c", "A minor", A_MINOR_TRIAD_A4, ("E5", "E5", "D5", "C5", "A4")),
+    create_level_1_playback_example("20a", "C major", C_MAJOR_TRIAD_C4, ("G4", "F4", "F4", "D4", "C4")),
+    create_level_1_playback_example("20b", "G major", G_MAJOR_TRIAD_G4, ("D5", "C5", "C5", "A4", "G4")),
+    create_level_1_playback_example("20c", "A minor", A_MINOR_TRIAD_A4, ("E5", "D5", "D5", "B4", "A4")),
+    create_level_1_playback_example("21a", "C major", C_MAJOR_TRIAD_C4, ("G4", "F4", "D4", "F4", "E4")),
+    create_level_1_playback_example("21b", "G major", G_MAJOR_TRIAD_G4, ("D5", "C5", "A4", "C5", "B4")),
+    create_level_1_playback_example("21c", "A minor", A_MINOR_TRIAD_A4, ("E5", "D5", "B4", "D5", "C5")),
+    create_level_1_playback_example("22a", "C major", C_MAJOR_TRIAD_C4, ("C4", "D4", "F4", "F4", "G4")),
+    create_level_1_playback_example("22b", "G major", G_MAJOR_TRIAD_G4, ("G4", "A4", "C5", "C5", "D5")),
+    create_level_1_playback_example("22c", "A minor", A_MINOR_TRIAD_A4, ("A4", "B4", "D5", "D5", "E5")),
+)
+
 LEVEL_5_CLAPBACK_PLAYBACK_EXAMPLES = (
     ClapbackExample(
         id="clap5-1",
@@ -864,6 +964,25 @@ def get_playable_clapback_examples(level):
     )
 
 
+def get_playback_examples(level):
+    """Return source playback examples for a level."""
+
+    if level == 1:
+        return LEVEL_1_PLAYBACK_EXAMPLES
+
+    return ()
+
+
+def get_playable_playback_examples(level):
+    """Return playable playback examples for a level."""
+
+    return tuple(
+        example
+        for example in get_playback_examples(level)
+        if example.draft_events
+    )
+
+
 def choose_unplayed_example_index(examples, played_example_ids, previous_key=None):
     """Choose a random example index, preferring unplayed and a different key."""
 
@@ -1010,11 +1129,21 @@ def create_clapback_waveform(example):
 
 
 def create_playback_waveform(example):
-    """Create starting chord and one more playback of the same example."""
+    """Create starting chord and the configured number of melody repetitions."""
 
     intro = create_starting_chord_intro(example)
     melody = create_melody_audio(example)
-    return np.concatenate([intro, melody])
+    melody_repetitions = []
+
+    for repetition in range(example.playback_repetitions):
+        if repetition > 0:
+            melody_repetitions.append(
+                create_silence(beats_per_measure(example.time_signature) * BEAT_SECONDS)
+            )
+
+        melody_repetitions.append(melody)
+
+    return np.concatenate([intro, *melody_repetitions])
 
 
 def create_clapback_audio(example, file_path):
@@ -1065,5 +1194,35 @@ def create_clapback_question(level, example_index=0):
         playback_audio_file=(
             f"clapback/{playback_filename}" if example.starting_chord_notes else ""
         ),
+        starting_chord_label=example.starting_chord_label,
+    )
+
+
+def create_playback_question(level, example_index=0):
+    """Create one playback question."""
+
+    examples = get_playable_playback_examples(level)
+
+    if not examples:
+        raise ValueError(f"No playback examples for level {level}.")
+
+    config.ensure_audio_folder(config.CLAPBACK_AUDIO_FOLDER)
+    example = examples[example_index % len(examples)]
+    filename = make_safe_filename(
+        f"level_{level}_{example.id}_playback_{example.audio_version}.wav"
+    )
+    file_path = config.CLAPBACK_AUDIO_FOLDER / filename
+
+    if not file_path.exists():
+        create_playback_audio(example, file_path)
+
+    return ClapbackQuestion(
+        level=level,
+        example_id=example.id,
+        time_signature=example.time_signature,
+        key=example.key,
+        image_file=example.image_file,
+        status=example.status,
+        audio_file=f"clapback/{filename}",
         starting_chord_label=example.starting_chord_label,
     )

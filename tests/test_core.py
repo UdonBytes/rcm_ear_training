@@ -13,15 +13,19 @@ from rcm_ear_training.clapback import (
     BEAT_SECONDS,
     CLAPBACK_AUDIO_VERSION,
     LEVEL_1_CLAPBACK_EXAMPLES,
+    LEVEL_1_PLAYBACK_EXAMPLES,
     LEVEL_5_CLAPBACK_PLAYBACK_EXAMPLES,
     beats_per_measure,
     choose_unplayed_example_index,
     create_clapback_question,
     create_clapback_waveform,
+    create_playback_question,
     create_playback_waveform,
     events_with_completed_length,
     get_clapback_examples,
     get_playable_clapback_examples,
+    get_playable_playback_examples,
+    get_playback_examples,
     total_event_beats,
 )
 from rcm_ear_training.chords import get_chord_requirement
@@ -610,6 +614,58 @@ class ClapbackTests(unittest.TestCase):
         self.assertEqual(examples[4].id, "clap1-5")
         self.assertTrue((CLAPBACK_EXAMPLE_FOLDER / examples[0].image_file).exists())
 
+    def test_level_1_contains_approved_playback_examples(self):
+        examples = get_playback_examples(1)
+
+        self.assertEqual(examples, LEVEL_1_PLAYBACK_EXAMPLES)
+        self.assertEqual(len(examples), 66)
+        self.assertEqual(examples[0].id, "play1-1a")
+        self.assertEqual(examples[0].key, "C major")
+        self.assertEqual(examples[0].starting_chord_notes, ("C4", "E4", "G4"))
+        self.assertEqual(examples[0].playback_repetitions, 2)
+        self.assertEqual(
+            tuple((event.note, event.beats) for event in examples[0].draft_events),
+            (
+                ("C4", 1),
+                ("D4", 1),
+                ("E4", 1),
+                ("G4", 1),
+                ("E4", 4),
+            ),
+        )
+        self.assertEqual(examples[1].id, "play1-1b")
+        self.assertEqual(examples[1].starting_chord_notes, ("G4", "B4", "D5"))
+        self.assertEqual(examples[2].id, "play1-1c")
+        self.assertEqual(examples[2].starting_chord_notes, ("A4", "C5", "E5"))
+        self.assertEqual(examples[-1].id, "play1-22c")
+        self.assertEqual(
+            tuple((event.note, event.beats) for event in examples[-1].draft_events),
+            (
+                ("A4", 1),
+                ("B4", 1),
+                ("D5", 1),
+                ("D5", 1),
+                ("E5", 4),
+            ),
+        )
+
+        for example in examples:
+            with self.subTest(example=example.id):
+                self.assertEqual(example.status, "approved")
+                self.assertEqual(example.time_signature, "4/4")
+                self.assertEqual(example.measures, 2)
+                self.assertEqual(example.playback_repetitions, 2)
+                self.assertEqual(
+                    total_event_beats(events_with_completed_length(example)),
+                    beats_per_measure(example.time_signature) * example.measures,
+                )
+
+    def test_level_1_playable_playback_examples(self):
+        examples = get_playable_playback_examples(1)
+
+        self.assertEqual(len(examples), 66)
+        self.assertEqual(examples[0].id, "play1-1a")
+
     def test_level_5_contains_approved_clapback_playback_examples(self):
         examples = get_clapback_examples(5)
 
@@ -713,6 +769,14 @@ class ClapbackTests(unittest.TestCase):
         self.assertIn("_playback_", question.playback_audio_file)
         self.assertNotEqual(question.audio_file, question.playback_audio_file)
 
+    def test_create_level_1_playback_question_creates_audio(self):
+        question = create_playback_question(1)
+
+        self.assertEqual(question.example_id, "play1-1a")
+        self.assertEqual(question.time_signature, "4/4")
+        self.assertEqual(question.key, "C major")
+        self.assertIn("_playback_", question.audio_file)
+
     def test_random_clapback_rotation_prefers_unplayed_examples(self):
         examples = get_playable_clapback_examples(1)
         chosen_index = choose_unplayed_example_index(
@@ -789,6 +853,23 @@ class ClapbackTests(unittest.TestCase):
             intro_samples + count_in_samples + melody_samples + rest_samples + melody_samples,
         )
         self.assertEqual(len(playback_waveform), intro_samples + melody_samples)
+
+    def test_level_1_playback_audio_plays_melody_twice(self):
+        example = LEVEL_1_PLAYBACK_EXAMPLES[0]
+        waveform = create_playback_waveform(example)
+        intro_samples = int(SAMPLE_RATE * BEAT_SECONDS * 3)
+        melody_samples = sum(
+            int(SAMPLE_RATE * event.beats * BEAT_SECONDS)
+            for event in events_with_completed_length(example)
+        )
+        rest_samples = int(
+            SAMPLE_RATE * beats_per_measure(example.time_signature) * BEAT_SECONDS
+        )
+
+        self.assertEqual(
+            len(waveform),
+            intro_samples + melody_samples + rest_samples + melody_samples,
+        )
 
     def test_create_clapback_question_creates_approved_audio(self):
         question = create_clapback_question(1)
