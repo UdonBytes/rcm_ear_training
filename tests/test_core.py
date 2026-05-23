@@ -32,6 +32,12 @@ from rcm_ear_training.clapback import (
     total_event_beats,
 )
 from rcm_ear_training.chords import get_chord_requirement
+from rcm_ear_training.chord_progressions import (
+    LEVEL_5_CHORD_PROGRESSION_EXAMPLES,
+    create_chord_progression_question,
+    create_chord_progression_waveform,
+    get_chord_progression_examples,
+)
 from rcm_ear_training.chords import (
     AUGMENTED_TRIAD,
     DIMINISHED_7TH,
@@ -48,6 +54,7 @@ from rcm_ear_training.chords import (
 )
 from rcm_ear_training.curriculum import (
     CHORDS,
+    CHORD_PROGRESSIONS,
     CLAPBACK,
     FUTURE,
     IMPLEMENTED,
@@ -318,6 +325,12 @@ class CurriculumTests(unittest.TestCase):
             [INTERVALS, CHORDS, CLAPBACK],
         )
 
+        level_5 = get_level("level_5")
+        self.assertEqual(
+            [test.id for test in implemented_tests(level_5)],
+            [INTERVALS, CHORDS, CHORD_PROGRESSIONS, CLAPBACK],
+        )
+
     def test_future_expansion_levels_are_mapped_but_not_current(self):
         planned_levels = future_levels()
 
@@ -451,6 +464,192 @@ class ChordGenerationTests(unittest.TestCase):
 
             with self.subTest(level=level):
                 self.assertEqual(question.choices, choices)
+
+
+class ChordProgressionTests(unittest.TestCase):
+    def test_level_5_chord_progressions_match_approved_pool(self):
+        examples = get_chord_progression_examples(5)
+
+        self.assertEqual(examples, LEVEL_5_CHORD_PROGRESSION_EXAMPLES)
+        self.assertEqual(len(examples), 60)
+        self.assertEqual(examples[0].id, "prog5-iv-1")
+        self.assertEqual(examples[0].key, "C major")
+        self.assertEqual(examples[0].progression, "I IV I")
+        self.assertEqual(examples[0].inversion_pattern, "I6, IV, I6")
+        self.assertEqual(examples[0].events[0].top_notes, ("E4", "G4", "C5"))
+        self.assertEqual(examples[0].events[0].bass_note, "C3")
+        self.assertEqual(examples[9].progression, "I V I")
+        self.assertEqual(examples[9].events[-1].top_notes, ("G4", "C5", "E5"))
+        self.assertEqual(examples[-1].id, "prog5-f-v-5")
+        self.assertEqual(examples[-1].key, "F major")
+        self.assertEqual(examples[-1].events[-1].top_notes, ("C4", "F4", "A4"))
+        self.assertEqual(examples[-1].events[-1].bass_note, "F2")
+
+    def test_level_5_chord_progression_voicings_match_explicit_octave_map(self):
+        examples_by_id = {
+            example.id: tuple(event.top_notes for event in example.events)
+            for example in get_chord_progression_examples(5)
+            if example.key == "C major"
+        }
+        expected_top_notes = {
+            "prog5-iv-1": (("E4", "G4", "C5"), ("F4", "A4", "C5"), ("E4", "G4", "C5")),
+            "prog5-iv-2": (("C4", "E4", "G4"), ("C4", "F4", "A4"), ("C4", "E4", "G4")),
+            "prog5-iv-3": (("G3", "C4", "E4"), ("A3", "C4", "F4"), ("G3", "C4", "E4")),
+            "prog5-iv-4": (("C4", "E4", "G4"), ("A3", "C4", "F4"), ("G3", "C4", "E4")),
+            "prog5-iv-5": (("G3", "C4", "E4"), ("A3", "C4", "F4"), ("C4", "E4", "G4")),
+            "prog5-v-1": (("C4", "E4", "G4"), ("B3", "D4", "G4"), ("C4", "E4", "G4")),
+            "prog5-v-2": (("E4", "G4", "C5"), ("D4", "G4", "B4"), ("E4", "G4", "C5")),
+            "prog5-v-3": (("G4", "C5", "E5"), ("G4", "B4", "D5"), ("E4", "G4", "C5")),
+            "prog5-v-4": (("E4", "G4", "C5"), ("G4", "B4", "D5"), ("G4", "C5", "E5")),
+            "prog5-v-5": (("G4", "C5", "E5"), ("G4", "B4", "D5"), ("G4", "C5", "E5")),
+        }
+
+        self.assertEqual(examples_by_id, expected_top_notes)
+
+    def test_level_5_g_major_chord_progression_voicings_match_explicit_octave_map(self):
+        examples_by_id = {
+            example.id: tuple(event.top_notes for event in example.events)
+            for example in get_chord_progression_examples(5)
+            if example.key == "G major"
+        }
+        expected_top_notes = {
+            "prog5-g-iv-1": (("B3", "D4", "G4"), ("C4", "E4", "G4"), ("B3", "D4", "G4")),
+            "prog5-g-iv-2": (("G3", "B3", "D4"), ("G3", "C4", "E4"), ("G3", "B3", "D4")),
+            "prog5-g-iv-3": (("D4", "G4", "B4"), ("E4", "G4", "C5"), ("D4", "G4", "B4")),
+            "prog5-g-iv-4": (("G4", "B4", "D5"), ("E4", "G4", "C5"), ("D4", "G4", "B4")),
+            "prog5-g-iv-5": (("D4", "G4", "B4"), ("E4", "G4", "C5"), ("G4", "B4", "D5")),
+            "prog5-g-v-1": (("G4", "B4", "D5"), ("F#4", "A4", "D5"), ("G4", "B4", "D5")),
+            "prog5-g-v-2": (("B3", "D4", "G4"), ("A3", "D4", "F#4"), ("B3", "D4", "G4")),
+            "prog5-g-v-3": (("D4", "G4", "B4"), ("D4", "F#4", "A4"), ("B3", "D4", "G4")),
+            "prog5-g-v-4": (("B3", "D4", "G4"), ("D4", "F#4", "A4"), ("D4", "G4", "B4")),
+            "prog5-g-v-5": (("D4", "G4", "B4"), ("D4", "F#4", "A4"), ("D4", "G4", "B4")),
+        }
+
+        self.assertEqual(examples_by_id, expected_top_notes)
+
+    def test_level_5_a_major_chord_progression_voicings_match_explicit_octave_map(self):
+        examples = [
+            example
+            for example in get_chord_progression_examples(5)
+            if example.key == "A major"
+        ]
+        examples_by_id = {
+            example.id: tuple(event.top_notes for event in example.events)
+            for example in examples
+        }
+        expected_top_notes = {
+            "prog5-a-iv-1": (("C#4", "E4", "A4"), ("D4", "F#4", "A4"), ("C#4", "E4", "A4")),
+            "prog5-a-iv-2": (("A3", "C#4", "E4"), ("A3", "D4", "F#4"), ("A3", "C#4", "E4")),
+            "prog5-a-iv-3": (("E4", "A4", "C#5"), ("F#4", "A4", "D5"), ("E4", "A4", "C#5")),
+            "prog5-a-iv-4": (("A4", "C#5", "E5"), ("F#4", "A4", "D5"), ("E4", "A4", "C#5")),
+            "prog5-a-iv-5": (("E4", "A4", "C#5"), ("F#4", "A4", "D5"), ("A4", "C#5", "E5")),
+            "prog5-a-v-1": (("A4", "C#5", "E5"), ("G#4", "B4", "E5"), ("A4", "C#5", "E5")),
+            "prog5-a-v-2": (("C#4", "E4", "A4"), ("B3", "E4", "G#4"), ("C#4", "E4", "A4")),
+            "prog5-a-v-3": (("E4", "A4", "C#5"), ("E4", "G#4", "B4"), ("C#4", "E4", "A4")),
+            "prog5-a-v-4": (("C#4", "E4", "A4"), ("E4", "G#4", "B4"), ("E4", "A4", "C#5")),
+            "prog5-a-v-5": (("E4", "A4", "C#5"), ("E4", "G#4", "B4"), ("E4", "A4", "C#5")),
+        }
+
+        self.assertEqual(len(examples), 10)
+        self.assertEqual(examples_by_id, expected_top_notes)
+        self.assertTrue(all(event.bass_note in ("A2", "D3", "E3") for example in examples for event in example.events))
+
+    def test_level_5_d_major_chord_progression_voicings_match_explicit_octave_map(self):
+        examples = [
+            example
+            for example in get_chord_progression_examples(5)
+            if example.key == "D major"
+        ]
+        examples_by_id = {
+            example.id: tuple(event.top_notes for event in example.events)
+            for example in examples
+        }
+        expected_top_notes = {
+            "prog5-d-iv-1": (("F#4", "A4", "D5"), ("G4", "B4", "D5"), ("F#4", "A4", "D5")),
+            "prog5-d-iv-2": (("D4", "F#4", "A4"), ("D4", "G4", "B4"), ("D4", "F#4", "A4")),
+            "prog5-d-iv-3": (("A3", "D4", "F#4"), ("B3", "D4", "G4"), ("A3", "D4", "F#4")),
+            "prog5-d-iv-4": (("D4", "F#4", "A4"), ("B3", "D4", "G4"), ("A3", "D4", "F#4")),
+            "prog5-d-iv-5": (("A3", "D4", "F#4"), ("B3", "D4", "G4"), ("D4", "F#4", "A4")),
+            "prog5-d-v-1": (("D4", "F#4", "A4"), ("C#4", "E4", "A4"), ("D4", "F#4", "A4")),
+            "prog5-d-v-2": (("F#4", "A4", "D5"), ("E4", "A4", "C#5"), ("F#4", "A4", "D5")),
+            "prog5-d-v-3": (("A4", "D5", "F#5"), ("A4", "C#5", "E5"), ("F#4", "A4", "D5")),
+            "prog5-d-v-4": (("F#4", "A4", "D5"), ("A4", "C#5", "E5"), ("A4", "D5", "F#5")),
+            "prog5-d-v-5": (("A4", "D5", "F#5"), ("A4", "C#5", "E5"), ("A4", "D5", "F#5")),
+        }
+
+        self.assertEqual(len(examples), 10)
+        self.assertEqual(examples_by_id, expected_top_notes)
+        self.assertTrue(all(event.bass_note in ("D3", "G3", "A3") for example in examples for event in example.events))
+
+    def test_level_5_e_major_chord_progression_voicings_match_explicit_octave_map(self):
+        examples = [
+            example
+            for example in get_chord_progression_examples(5)
+            if example.key == "E major"
+        ]
+        examples_by_id = {
+            example.id: tuple(event.top_notes for event in example.events)
+            for example in examples
+        }
+        expected_top_notes = {
+            "prog5-e-iv-1": (("G#4", "B4", "E5"), ("A4", "C#5", "E5"), ("G#4", "B4", "E5")),
+            "prog5-e-iv-2": (("E4", "G#4", "B4"), ("E4", "A4", "C#5"), ("E4", "G#4", "B4")),
+            "prog5-e-iv-3": (("B3", "E4", "G#4"), ("C#4", "E4", "A4"), ("B3", "E4", "G#4")),
+            "prog5-e-iv-4": (("E4", "G#4", "B4"), ("C#4", "E4", "A4"), ("B3", "E4", "G#4")),
+            "prog5-e-iv-5": (("B3", "E4", "G#4"), ("C#4", "E4", "A4"), ("E4", "G#4", "B4")),
+            "prog5-e-v-1": (("E4", "G#4", "B4"), ("D#4", "F#4", "B4"), ("E4", "G#4", "B4")),
+            "prog5-e-v-2": (("G#4", "B4", "E5"), ("F#4", "B4", "D#5"), ("G#4", "B4", "E5")),
+            "prog5-e-v-3": (("B4", "E5", "G#5"), ("B4", "D#5", "F#5"), ("G#4", "B4", "E5")),
+            "prog5-e-v-4": (("G#4", "B4", "E5"), ("B4", "D#5", "F#5"), ("B4", "E5", "G#5")),
+            "prog5-e-v-5": (("B4", "E5", "G#5"), ("B4", "D#5", "F#5"), ("B4", "E5", "G#5")),
+        }
+
+        self.assertEqual(len(examples), 10)
+        self.assertEqual(examples_by_id, expected_top_notes)
+        self.assertTrue(all(event.bass_note in ("E3", "A3", "B3") for example in examples for event in example.events))
+
+    def test_level_5_f_major_chord_progression_voicings_match_explicit_octave_map(self):
+        examples = [
+            example
+            for example in get_chord_progression_examples(5)
+            if example.key == "F major"
+        ]
+        examples_by_id = {
+            example.id: tuple(event.top_notes for event in example.events)
+            for example in examples
+        }
+        expected_top_notes = {
+            "prog5-f-iv-1": (("A3", "C4", "F4"), ("Bb3", "D4", "F4"), ("A3", "C4", "F4")),
+            "prog5-f-iv-2": (("F3", "A3", "C4"), ("F3", "Bb3", "D4"), ("F3", "A3", "C4")),
+            "prog5-f-iv-3": (("C4", "F4", "A4"), ("D4", "F4", "Bb4"), ("C4", "F4", "A4")),
+            "prog5-f-iv-4": (("F4", "A4", "C5"), ("D4", "F4", "Bb4"), ("C4", "F4", "A4")),
+            "prog5-f-iv-5": (("C4", "F4", "A4"), ("D4", "F4", "Bb4"), ("F4", "A4", "C5")),
+            "prog5-f-v-1": (("F4", "A4", "C5"), ("E4", "G4", "C5"), ("F4", "A4", "C5")),
+            "prog5-f-v-2": (("A3", "C4", "F4"), ("G3", "C4", "E4"), ("A3", "C4", "F4")),
+            "prog5-f-v-3": (("C4", "F4", "A4"), ("C4", "E4", "G4"), ("A3", "C4", "F4")),
+            "prog5-f-v-4": (("A3", "C4", "F4"), ("C4", "E4", "G4"), ("C4", "F4", "A4")),
+            "prog5-f-v-5": (("C4", "F4", "A4"), ("C4", "E4", "G4"), ("C4", "F4", "A4")),
+        }
+
+        self.assertEqual(len(examples), 10)
+        self.assertEqual(examples_by_id, expected_top_notes)
+        self.assertTrue(all(event.bass_note in ("F2", "Bb2", "C3") for example in examples for event in example.events))
+
+    def test_level_5_chord_progression_waveform_plays_twice(self):
+        example = LEVEL_5_CHORD_PROGRESSION_EXAMPLES[0]
+        waveform = create_chord_progression_waveform(example)
+
+        self.assertGreater(len(waveform), SAMPLE_RATE * 7)
+
+    def test_create_level_5_chord_progression_question_creates_audio(self):
+        question = create_chord_progression_question(5, 0)
+
+        self.assertEqual(question.example_id, "prog5-iv-1")
+        self.assertEqual(question.key, "C major")
+        self.assertEqual(question.progression, "I IV I")
+        self.assertEqual(question.answer, "I-IV-I")
+        self.assertEqual(question.choices, ("I-IV-I", "I-V-I"))
+        self.assertIn("chord_progressions/", question.audio_file)
 
 
 class ClapbackTests(unittest.TestCase):

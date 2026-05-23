@@ -61,6 +61,12 @@ CHORD_PROGRESSIONS_TEST = TestDefinition(
     status=PLANNED,
     description="Identify common chord progressions at advanced levels.",
 )
+LEVEL_5_CHORD_PROGRESSIONS_TEST = TestDefinition(
+    id=CHORD_PROGRESSIONS,
+    label="Chord Progressions",
+    status=IMPLEMENTED,
+    description="Hear curated I-IV-I and I-V-I progression examples.",
+)
 
 FOUNDATION_TESTS = (
     CLAPBACK_TEST,
@@ -70,6 +76,13 @@ FOUNDATION_TESTS = (
 LEVEL_1_TO_8_TESTS = (
     INTERVAL_TEST,
     CHORD_TEST,
+    CLAPBACK_TEST,
+    PLAYBACK_TEST,
+)
+LEVEL_5_TESTS = (
+    INTERVAL_TEST,
+    CHORD_TEST,
+    LEVEL_5_CHORD_PROGRESSIONS_TEST,
     CLAPBACK_TEST,
     PLAYBACK_TEST,
 )
@@ -87,7 +100,7 @@ CURRENT_LEVELS = tuple(
         label=f"Level {level}",
         status=IMPLEMENTED,
         interval_level=level,
-        tests=LEVEL_1_TO_8_TESTS,
+        tests=LEVEL_5_TESTS if level == 5 else LEVEL_1_TO_8_TESTS,
     )
     for level in range(1, 9)
 )

@@ -6,10 +6,15 @@ import streamlit as st
 
 import rcm_ear_training.clapback as clapback
 from rcm_ear_training.config import AUDIO_FOLDER
+from rcm_ear_training.chord_progressions import (
+    CHORD_PROGRESSION_AUDIO_VERSION,
+    create_chord_progression_question,
+)
 from rcm_ear_training.chords import create_chord_question
 from rcm_ear_training.curriculum import (
     IMPLEMENTED,
     CHORDS,
+    CHORD_PROGRESSIONS,
     CLAPBACK,
     INTERVALS,
     PLAYBACK,
@@ -385,6 +390,54 @@ def render_chord_plan(level):
     render_result(question)
 
 
+def render_chord_progression_practice(level):
+    """Render chord-progression identification practice."""
+
+    if st.button("Back to Tests"):
+        st.session_state.selected_test_id = None
+        reset_question()
+        st.rerun()
+
+    st.subheader(f"{level.label} Chord Progressions")
+
+    if (
+        st.session_state.current_question is not None
+        and CHORD_PROGRESSION_AUDIO_VERSION not in st.session_state.current_question.audio_file
+    ):
+        reset_question()
+
+    if st.session_state.current_question is None:
+        st.session_state.current_question = create_chord_progression_question(level.interval_level)
+
+    question = st.session_state.current_question
+    audio_path = AUDIO_FOLDER / question.audio_file
+
+    st.write(f"Key: {question.key.title()}")
+
+    if audio_path.exists():
+        with open(audio_path, "rb") as audio_file:
+            st.audio(audio_file.read(), format="audio/wav")
+    else:
+        st.error("The audio file was not created.")
+        st.stop()
+
+    st.write("Choose your answer:")
+
+    columns = st.columns(len(question.choices))
+
+    for column, choice in zip(columns, question.choices):
+        with column:
+            st.button(
+                choice,
+                use_container_width=True,
+                type="primary" if st.session_state.selected_answer == choice else "secondary",
+                on_click=select_answer,
+                args=(choice, question.answer),
+            )
+
+    render_result(question)
+
+
 def render_clapback_practice(level):
     """Render approved clapback examples."""
 
@@ -550,6 +603,10 @@ def main():
 
     if st.session_state.selected_test_id == CHORDS:
         render_chord_plan(level)
+        return
+
+    if st.session_state.selected_test_id == CHORD_PROGRESSIONS:
+        render_chord_progression_practice(level)
         return
 
     if st.session_state.selected_test_id == CLAPBACK:
