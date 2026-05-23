@@ -159,6 +159,9 @@ def render_test_menu(level):
         if level.interval_level in (1, 2, 3, 4) and test.id == PLAYBACK:
             disabled = False
 
+        if test.id == CLAPBACK and not get_playable_clapback_examples(level.interval_level):
+            disabled = True
+
         if level.interval_level == 5 and test.id == CLAPBACK:
             button_label = "Clapback / Playback"
         else:
