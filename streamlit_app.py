@@ -413,8 +413,8 @@ def render_clapback_practice(level):
     question = st.session_state.current_question
     audio_path = AUDIO_FOLDER / question.audio_file
 
-    st.write(f"Time signature: {question.time_signature}")
-    st.write(f"Key: {question.key}")
+    st.write(f"Time Signature: {question.time_signature}")
+    st.write(f"Key: {question.key.title()}")
 
     if audio_path.exists():
         if question.playback_audio_file:
