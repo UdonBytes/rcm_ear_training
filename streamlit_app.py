@@ -146,7 +146,6 @@ def render_test_menu(level):
             button_label,
             disabled=disabled,
             use_container_width=True,
-            help=test.description,
         ):
             st.session_state.selected_test_id = test.id
             reset_question()
