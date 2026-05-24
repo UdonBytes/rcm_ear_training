@@ -5,11 +5,8 @@ import importlib
 import streamlit as st
 
 import rcm_ear_training.clapback as clapback
+import rcm_ear_training.chord_progressions as chord_progressions
 from rcm_ear_training.config import AUDIO_FOLDER
-from rcm_ear_training.chord_progressions import (
-    CHORD_PROGRESSION_AUDIO_VERSION,
-    create_chord_progression_question,
-)
 from rcm_ear_training.chords import create_chord_question
 from rcm_ear_training.curriculum import (
     IMPLEMENTED,
@@ -28,11 +25,59 @@ from rcm_ear_training.theory import get_level_description
 
 
 clapback = importlib.reload(clapback)
+chord_progressions = importlib.reload(chord_progressions)
 choose_unplayed_example_index = clapback.choose_unplayed_example_index
 create_clapback_question = clapback.create_clapback_question
 create_playback_question = clapback.create_playback_question
 get_playable_clapback_examples = clapback.get_playable_clapback_examples
 get_playable_playback_examples = clapback.get_playable_playback_examples
+CHORD_PROGRESSION_AUDIO_VERSION = chord_progressions.CHORD_PROGRESSION_AUDIO_VERSION
+create_chord_progression_question = chord_progressions.create_chord_progression_question
+get_chord_progression_choices = chord_progressions.get_chord_progression_choices
+
+
+def render_audio_player(audio_path, missing_message):
+    """Render a WAV player or stop with a clear error."""
+
+    if audio_path.exists():
+        with open(audio_path, "rb") as audio_file:
+            st.audio(audio_file.read(), format="audio/wav")
+        return
+
+    st.error(missing_message)
+    st.stop()
+
+
+def render_back_to_tests_button():
+    """Return to the selected level's test menu."""
+
+    if st.button("Back to Tests"):
+        st.session_state.selected_test_id = None
+        reset_question()
+        st.rerun()
+
+
+def render_choice_buttons(choices, correct_answer, grouped=False):
+    """Render selectable answer buttons."""
+
+    rows = group_answer_choices(choices) if grouped else [choices]
+
+    for row in rows:
+        columns = st.columns(len(row))
+
+        for column, choice in zip(columns, row):
+            with column:
+                st.button(
+                    choice,
+                    use_container_width=True,
+                    type=(
+                        "primary"
+                        if st.session_state.selected_answer == choice
+                        else "secondary"
+                    ),
+                    on_click=select_answer,
+                    args=(choice, correct_answer),
+                )
 
 
 st.set_page_config(
@@ -214,16 +259,21 @@ def select_answer(choice, correct_answer):
 def update_chord_result(question):
     """Update result state when both chord answer parts are selected."""
 
-    if st.session_state.selected_chord_quality and st.session_state.selected_chord_tone:
-        st.session_state.selected_answer = (
-            f"{st.session_state.selected_chord_quality} / "
-            f"{st.session_state.selected_chord_tone}"
-        )
-        st.session_state.is_correct = (
-            st.session_state.selected_chord_quality == question.quality_answer
-            and st.session_state.selected_chord_tone == question.tone_answer
-        )
-        st.session_state.result_checked = True
+    if not (st.session_state.selected_chord_quality and st.session_state.selected_chord_tone):
+        st.session_state.selected_answer = None
+        st.session_state.is_correct = False
+        st.session_state.result_checked = False
+        return
+
+    st.session_state.selected_answer = (
+        f"{st.session_state.selected_chord_quality} / "
+        f"{st.session_state.selected_chord_tone}"
+    )
+    st.session_state.is_correct = (
+        st.session_state.selected_chord_quality == question.quality_answer
+        and st.session_state.selected_chord_tone == question.tone_answer
+    )
+    st.session_state.result_checked = True
 
 
 def select_chord_quality(choice, question):
@@ -252,27 +302,10 @@ def render_question(question):
 
     audio_path = AUDIO_FOLDER / question.audio_file
 
-    if audio_path.exists():
-        with open(audio_path, "rb") as audio_file:
-            st.audio(audio_file.read(), format="audio/wav")
-    else:
-        st.error("The audio file was not created.")
-        st.stop()
+    render_audio_player(audio_path, "The audio file was not created.")
 
     st.write("Choose your answer:")
-
-    for row in group_answer_choices(question.choices):
-        columns = st.columns(len(row))
-
-        for column, choice in zip(columns, row):
-            with column:
-                st.button(
-                    choice,
-                    use_container_width=True,
-                    type="primary" if st.session_state.selected_answer == choice else "secondary",
-                    on_click=select_answer,
-                    args=(choice, question.answer),
-                )
+    render_choice_buttons(question.choices, question.answer, grouped=True)
 
 
 def render_result(question):
@@ -294,10 +327,7 @@ def render_result(question):
 def render_interval_practice(level):
     """Render the currently implemented interval practice test."""
 
-    if st.button("Back to Tests"):
-        st.session_state.selected_test_id = None
-        reset_question()
-        st.rerun()
+    render_back_to_tests_button()
 
     try:
         question = get_current_question(level.interval_level)
@@ -312,10 +342,7 @@ def render_interval_practice(level):
 def render_chord_plan(level):
     """Render the chord practice test."""
 
-    if st.button("Back to Tests"):
-        st.session_state.selected_test_id = None
-        reset_question()
-        st.rerun()
+    render_back_to_tests_button()
 
     st.subheader(f"{level.label} Chords")
 
@@ -327,17 +354,10 @@ def render_chord_plan(level):
 
     st.write(question.prompt)
 
-    if audio_path.exists():
-        with open(audio_path, "rb") as audio_file:
-            st.audio(audio_file.read(), format="audio/wav")
-    else:
-        st.error("The audio file was not created.")
-        st.stop()
+    if question.question_type == "quality_and_tone" and question.tone_audio_file:
+        st.write("Chord Quality")
+        render_audio_player(audio_path, "The audio file was not created.")
 
-    st.write("Choose your answer:")
-
-    if question.question_type == "quality_and_tone":
-        st.write("Chord quality:")
         quality_columns = st.columns(len(question.quality_choices))
 
         for column, choice in zip(quality_columns, question.quality_choices):
@@ -354,7 +374,10 @@ def render_chord_plan(level):
                     args=(choice, question),
                 )
 
-        st.write("Single note:")
+        st.write("Single Note")
+        tone_audio_path = AUDIO_FOLDER / question.tone_audio_file
+        render_audio_player(tone_audio_path, "The tone audio file was not created.")
+
         tone_columns = st.columns(len(question.tone_choices))
 
         for column, choice in zip(tone_columns, question.tone_choices):
@@ -370,7 +393,10 @@ def render_chord_plan(level):
                     on_click=select_chord_tone,
                     args=(choice, question),
                 )
+    else:
+        render_audio_player(audio_path, "The audio file was not created.")
 
+    if question.question_type == "quality_and_tone":
         if st.session_state.selected_chord_quality:
             st.write(f"Quality selected: {st.session_state.selected_chord_quality}")
 
@@ -378,14 +404,8 @@ def render_chord_plan(level):
             st.write(f"Note selected: {st.session_state.selected_chord_tone}")
 
     else:
-        for choice in question.choices:
-            st.button(
-                choice,
-                use_container_width=True,
-                type="primary" if st.session_state.selected_answer == choice else "secondary",
-                on_click=select_answer,
-                args=(choice, question.answer),
-            )
+        st.write("Choose your answer:")
+        render_choice_buttons(question.choices, question.answer)
 
     render_result(question)
 
@@ -393,16 +413,20 @@ def render_chord_plan(level):
 def render_chord_progression_practice(level):
     """Render chord-progression identification practice."""
 
-    if st.button("Back to Tests"):
-        st.session_state.selected_test_id = None
-        reset_question()
-        st.rerun()
+    render_back_to_tests_button()
 
     st.subheader(f"{level.label} Chord Progressions")
 
     if (
         st.session_state.current_question is not None
         and CHORD_PROGRESSION_AUDIO_VERSION not in st.session_state.current_question.audio_file
+    ):
+        reset_question()
+
+    if (
+        st.session_state.current_question is not None
+        and st.session_state.current_question.choices
+        != get_chord_progression_choices(level.interval_level)
     ):
         reset_question()
 
@@ -414,26 +438,11 @@ def render_chord_progression_practice(level):
 
     st.write(f"Key: {question.key.title()}")
 
-    if audio_path.exists():
-        with open(audio_path, "rb") as audio_file:
-            st.audio(audio_file.read(), format="audio/wav")
-    else:
-        st.error("The audio file was not created.")
-        st.stop()
+    render_audio_player(audio_path, "The audio file was not created.")
 
     st.write("Choose your answer:")
 
-    columns = st.columns(len(question.choices))
-
-    for column, choice in zip(columns, question.choices):
-        with column:
-            st.button(
-                choice,
-                use_container_width=True,
-                type="primary" if st.session_state.selected_answer == choice else "secondary",
-                on_click=select_answer,
-                args=(choice, question.answer),
-            )
+    render_choice_buttons(question.choices, question.answer)
 
     render_result(question)
 
@@ -441,10 +450,7 @@ def render_chord_progression_practice(level):
 def render_clapback_practice(level):
     """Render approved clapback examples."""
 
-    if st.button("Back to Tests"):
-        st.session_state.selected_test_id = None
-        reset_question()
-        st.rerun()
+    render_back_to_tests_button()
 
     if level.interval_level == 5:
         st.subheader(f"{level.label} Clapback / Playback")
@@ -487,26 +493,16 @@ def render_clapback_practice(level):
     st.write(f"Time Signature: {question.time_signature}")
     st.write(f"Key: {question.key.title()}")
 
-    if audio_path.exists():
-        if question.playback_audio_file:
-            st.write("Clapback")
-        with open(audio_path, "rb") as audio_file:
-            st.audio(audio_file.read(), format="audio/wav")
-    else:
-        st.error("The draft audio file was not created.")
-        st.stop()
+    if question.playback_audio_file:
+        st.write("Clapback")
+    render_audio_player(audio_path, "The draft audio file was not created.")
 
     if question.playback_audio_file:
         playback_audio_path = AUDIO_FOLDER / question.playback_audio_file
 
         st.write("Playback")
 
-        if playback_audio_path.exists():
-            with open(playback_audio_path, "rb") as audio_file:
-                st.audio(audio_file.read(), format="audio/wav")
-        else:
-            st.error("The playback audio file was not created.")
-            st.stop()
+        render_audio_player(playback_audio_path, "The playback audio file was not created.")
 
     if len(examples) > 1 and st.button("Next Example", use_container_width=True, type="primary"):
         st.session_state.clapback_played_ids = (
@@ -520,10 +516,7 @@ def render_clapback_practice(level):
 def render_playback_practice(level):
     """Render approved playback examples."""
 
-    if st.button("Back to Tests"):
-        st.session_state.selected_test_id = None
-        reset_question()
-        st.rerun()
+    render_back_to_tests_button()
 
     st.subheader(f"{level.label} Playback")
 
@@ -563,12 +556,7 @@ def render_playback_practice(level):
     st.write(f"Time Signature: {question.time_signature}")
     st.write(f"Key: {question.key.title()}")
 
-    if audio_path.exists():
-        with open(audio_path, "rb") as audio_file:
-            st.audio(audio_file.read(), format="audio/wav")
-    else:
-        st.error("The playback audio file was not created.")
-        st.stop()
+    render_audio_player(audio_path, "The playback audio file was not created.")
 
     if len(examples) > 1 and st.button("Next Example", use_container_width=True, type="primary"):
         st.session_state.playback_played_ids = (

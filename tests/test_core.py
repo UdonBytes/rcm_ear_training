@@ -33,10 +33,15 @@ from rcm_ear_training.clapback import (
 )
 from rcm_ear_training.chords import get_chord_requirement
 from rcm_ear_training.chord_progressions import (
+    CHORD_PROGRESSION_CHORD_DURATION,
+    CHORD_PROGRESSION_REPEAT_PAUSE,
     LEVEL_5_CHORD_PROGRESSION_EXAMPLES,
+    LEVEL_6_MINOR_CHORD_PROGRESSION_EXAMPLES,
+    STRICT_D_TO_V_BASS_LINES,
     create_chord_progression_question,
     create_chord_progression_waveform,
     get_chord_progression_examples,
+    validate_strict_bass_line,
 )
 from rcm_ear_training.chords import (
     AUGMENTED_TRIAD,
@@ -48,6 +53,8 @@ from rcm_ear_training.chords import (
     chord_notes,
     chord_quality_choices,
     create_chord_question,
+    create_chord_quality_waveform,
+    create_chord_tone_waveform,
     create_chord_waveform,
     chord_display_name,
     possible_chord_roots,
@@ -330,6 +337,11 @@ class CurriculumTests(unittest.TestCase):
             [test.id for test in implemented_tests(level_5)],
             [INTERVALS, CHORDS, CHORD_PROGRESSIONS, CLAPBACK],
         )
+        level_6 = get_level("level_6")
+        self.assertEqual(
+            [test.id for test in implemented_tests(level_6)],
+            [INTERVALS, CHORDS, CHORD_PROGRESSIONS, CLAPBACK],
+        )
 
     def test_future_expansion_levels_are_mapped_but_not_current(self):
         planned_levels = future_levels()
@@ -422,6 +434,17 @@ class ChordGenerationTests(unittest.TestCase):
         expected_samples = event_samples + pause_samples + broken_samples + pause_samples + event_samples
         self.assertEqual(len(waveform), expected_samples)
 
+    def test_level_3_split_chord_audio_maps_to_two_answer_parts(self):
+        quality_waveform = create_chord_quality_waveform("C4", MAJOR_TRIAD)
+        tone_waveform = create_chord_tone_waveform("C4", MAJOR_TRIAD, "Third")
+
+        broken_samples = int(SAMPLE_RATE * 0.55) * 3
+        pause_samples = int(SAMPLE_RATE * PAUSE_DURATION)
+        event_samples = int(SAMPLE_RATE * 1.4)
+
+        self.assertEqual(len(quality_waveform), event_samples)
+        self.assertEqual(len(tone_waveform), broken_samples + pause_samples + event_samples)
+
     def test_level_3_chord_question_asks_for_quality_and_chord_tone(self):
         question = create_chord_question(3)
 
@@ -431,6 +454,9 @@ class ChordGenerationTests(unittest.TestCase):
         self.assertIn(question.tone_answer, TONE_CHOICES)
         self.assertEqual(question.tone_choices, TONE_CHOICES)
         self.assertEqual(question.choices, [])
+        self.assertIn("_quality_chords_v2_split_parts.wav", question.audio_file)
+        self.assertIn("_tone_chords_v2_split_parts.wav", question.tone_audio_file)
+        self.assertNotEqual(question.audio_file, question.tone_audio_file)
 
     def test_level_1_and_2_chord_choices_are_not_randomized(self):
         for level in [1, 2]:
@@ -581,6 +607,65 @@ class ChordProgressionTests(unittest.TestCase):
         self.assertEqual(examples_by_id, expected_top_notes)
         self.assertTrue(all(event.bass_note in ("D3", "G3", "A3") for example in examples for event in example.events))
 
+    def test_level_5_d_major_v_progressions_use_a3_bass(self):
+        examples_by_id = {
+            example.id: tuple(event.bass_note for event in example.events)
+            for example in get_chord_progression_examples(5)
+            if example.key == "D major"
+        }
+
+        for example_id in [
+            "prog5-d-v-1",
+            "prog5-d-v-2",
+            "prog5-d-v-3",
+            "prog5-d-v-4",
+            "prog5-d-v-5",
+        ]:
+            with self.subTest(example=example_id):
+                self.assertEqual(examples_by_id[example_id], ("D3", "A3", "D3"))
+
+    def test_strict_d_to_v_examples_reject_a2_octave_error(self):
+        examples_by_id = {
+            example.id: example
+            for level in [5, 6]
+            for example in get_chord_progression_examples(level)
+        }
+
+        for example_id, expected_bass_line in STRICT_D_TO_V_BASS_LINES.items():
+            with self.subTest(example=example_id):
+                example = examples_by_id[example_id]
+                self.assertEqual(
+                    tuple(event.bass_note for event in example.events),
+                    expected_bass_line,
+                )
+                validate_strict_bass_line(example)
+
+    def test_strict_d_to_v_validation_treats_a2_as_wrong_octave(self):
+        example = next(
+            example
+            for example in get_chord_progression_examples(5)
+            if example.id == "prog5-d-v-1"
+        )
+        bad_example = type(example)(
+            id=example.id,
+            level=example.level,
+            key=example.key,
+            progression=example.progression,
+            inversion_pattern=example.inversion_pattern,
+            events=(
+                example.events[0],
+                type(example.events[1])(
+                    example.events[1].label,
+                    example.events[1].top_notes,
+                    "A2",
+                ),
+                example.events[2],
+            ),
+        )
+
+        with self.assertRaises(ValueError):
+            validate_strict_bass_line(bad_example)
+
     def test_level_5_e_major_chord_progression_voicings_match_explicit_octave_map(self):
         examples = [
             example
@@ -639,7 +724,57 @@ class ChordProgressionTests(unittest.TestCase):
         example = LEVEL_5_CHORD_PROGRESSION_EXAMPLES[0]
         waveform = create_chord_progression_waveform(example)
 
-        self.assertGreater(len(waveform), SAMPLE_RATE * 7)
+        self.assertEqual(len(waveform), SAMPLE_RATE * 7)
+
+    def test_chord_progression_waveform_has_no_inter_chord_silence(self):
+        example = LEVEL_5_CHORD_PROGRESSION_EXAMPLES[0]
+        waveform = create_chord_progression_waveform(example)
+        progression_pass_samples = int(
+            SAMPLE_RATE * CHORD_PROGRESSION_CHORD_DURATION * len(example.events)
+        )
+        repeat_pause_samples = int(SAMPLE_RATE * CHORD_PROGRESSION_REPEAT_PAUSE)
+
+        self.assertEqual(
+            len(waveform),
+            (progression_pass_samples * 2) + repeat_pause_samples,
+        )
+
+    def test_level_6_chord_progressions_include_level_5_and_minor_pool(self):
+        examples = get_chord_progression_examples(6)
+
+        self.assertEqual(len(examples), 120)
+        self.assertEqual(examples[:60], LEVEL_5_CHORD_PROGRESSION_EXAMPLES)
+        self.assertEqual(examples[60:], LEVEL_6_MINOR_CHORD_PROGRESSION_EXAMPLES)
+        self.assertEqual(examples[60].id, "prog6-f-minor-iv-1")
+        self.assertEqual(examples[60].key, "F minor")
+        self.assertEqual(examples[60].progression, "i iv i")
+        self.assertEqual(examples[60].events[0].top_notes, ("Ab3", "C4", "F4"))
+        self.assertEqual(examples[60].events[1].top_notes, ("Bb3", "Db4", "F4"))
+        self.assertEqual(examples[60].events[0].bass_note, "F2")
+        self.assertEqual(examples[-1].id, "prog6-e-minor-v-5")
+        self.assertEqual(examples[-1].key, "E minor")
+        self.assertEqual(examples[-1].progression, "i V i")
+        self.assertEqual(examples[-1].events[-1].top_notes, ("B4", "E5", "G5"))
+        self.assertEqual(examples[-1].events[-1].bass_note, "E3")
+
+    def test_level_6_minor_chord_progression_voicings_match_explicit_octave_map(self):
+        examples = get_chord_progression_examples(6)[60:]
+        examples_by_id = {
+            example.id: tuple(event.top_notes for event in example.events)
+            for example in examples
+        }
+
+        expected_spot_checks = {
+            "prog6-g-minor-v-2": (("Bb3", "D4", "G4"), ("A3", "D4", "F#4"), ("Bb3", "D4", "G4")),
+            "prog6-a-minor-iv-4": (("A4", "C5", "E5"), ("F4", "A4", "D5"), ("E4", "A4", "C5")),
+            "prog6-c-minor-v-3": (("G4", "C5", "Eb5"), ("G4", "B4", "D5"), ("Eb4", "G4", "C5")),
+            "prog6-d-minor-v-5": (("A4", "D5", "F5"), ("A4", "C#5", "E5"), ("A4", "D5", "F5")),
+            "prog6-e-minor-v-5": (("B4", "E5", "G5"), ("B4", "D#5", "F#5"), ("B4", "E5", "G5")),
+        }
+
+        for example_id, expected_top_notes in expected_spot_checks.items():
+            with self.subTest(example=example_id):
+                self.assertEqual(examples_by_id[example_id], expected_top_notes)
 
     def test_create_level_5_chord_progression_question_creates_audio(self):
         question = create_chord_progression_question(5, 0)
@@ -650,6 +785,23 @@ class ChordProgressionTests(unittest.TestCase):
         self.assertEqual(question.answer, "I-IV-I")
         self.assertEqual(question.choices, ("I-IV-I", "I-V-I"))
         self.assertIn("chord_progressions/", question.audio_file)
+
+    def test_create_level_6_chord_progression_question_groups_major_and_minor_choices(self):
+        question = create_chord_progression_question(6, 60)
+
+        self.assertEqual(question.example_id, "prog6-f-minor-iv-1")
+        self.assertEqual(question.key, "F minor")
+        self.assertEqual(question.progression, "i iv i")
+        self.assertEqual(question.answer, "I-IV-I / i-iv-i")
+        self.assertEqual(question.choices, ("I-IV-I / i-iv-i", "I-V-I / i-V-i"))
+        self.assertIn("chord_progressions/", question.audio_file)
+
+    def test_create_level_6_major_chord_progression_uses_grouped_answer(self):
+        question = create_chord_progression_question(6, 0)
+
+        self.assertEqual(question.example_id, "prog5-iv-1")
+        self.assertEqual(question.progression, "I IV I")
+        self.assertEqual(question.answer, "I-IV-I / i-iv-i")
 
 
 class ClapbackTests(unittest.TestCase):

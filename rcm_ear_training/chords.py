@@ -77,6 +77,7 @@ class ChordQuestion:
     audio_file: str
     prompt: str
     question_type: str
+    tone_audio_file: str = ""
     target_tone: str | None = None
     quality_answer: str | None = None
     quality_choices: tuple[str, ...] = ()
@@ -400,6 +401,26 @@ def create_chord_waveform(level, root_note, chord_quality, target_tone=None):
     return create_solid_chord_waveform(notes)
 
 
+def create_chord_quality_waveform(root_note, chord_quality):
+    """Create the first audio part for Level 3/4 chord-quality identification."""
+
+    return create_solid_chord_waveform(chord_notes(root_note, chord_quality))
+
+
+def create_chord_tone_waveform(root_note, chord_quality, target_tone):
+    """Create the second audio part for Level 3/4 chord-tone identification."""
+
+    notes = chord_notes(root_note, chord_quality)
+    target_note_index = TONE_CHOICES.index(target_tone)
+    target_note = notes[target_note_index]
+
+    return np.concatenate([
+        create_broken_chord_waveform(notes),
+        create_silence(config.PAUSE_DURATION),
+        trim_or_pad_event(load_piano_sample(target_note), CHORD_EVENT_DURATION),
+    ])
+
+
 def create_chord_audio(level, root_note, chord_quality, target_tone, file_path):
     """Write a chord question WAV file."""
 
@@ -410,10 +431,22 @@ def create_chord_audio(level, root_note, chord_quality, target_tone, file_path):
     )
 
 
+def create_chord_part_audio(waveform, file_path):
+    """Write one split chord-question WAV file."""
+
+    sf.write(file_path, waveform, config.SAMPLE_RATE)
+
+
 def chord_audio_cache_label():
     """Return the cache label for generated chord audio."""
 
     return "chords_v1_strong_attack"
+
+
+def split_chord_audio_cache_label():
+    """Return the cache label for split Level 3/4 chord audio."""
+
+    return "chords_v2_split_parts"
 
 
 def create_chord_question(level):
@@ -452,13 +485,40 @@ def create_chord_question(level):
         choices = [chord_display_name(quality, level) for quality in qualities]
         prompt = "Identify the chord quality."
 
-    filename = make_safe_filename(
-        f"level_{level}_{root_note}_{chord_quality}_{target_tone or question_type}_{chord_audio_cache_label()}.wav"
-    )
-    file_path = config.CHORD_AUDIO_FOLDER / filename
+    tone_audio_file = ""
 
-    if not file_path.exists():
-        create_chord_audio(level, root_note, chord_quality, target_tone, file_path)
+    if question_type == "quality_and_tone":
+        quality_filename = make_safe_filename(
+            f"level_{level}_{root_note}_{chord_quality}_{target_tone}_quality_{split_chord_audio_cache_label()}.wav"
+        )
+        tone_filename = make_safe_filename(
+            f"level_{level}_{root_note}_{chord_quality}_{target_tone}_tone_{split_chord_audio_cache_label()}.wav"
+        )
+        quality_file_path = config.CHORD_AUDIO_FOLDER / quality_filename
+        tone_file_path = config.CHORD_AUDIO_FOLDER / tone_filename
+
+        if not quality_file_path.exists():
+            create_chord_part_audio(
+                create_chord_quality_waveform(root_note, chord_quality),
+                quality_file_path,
+            )
+
+        if not tone_file_path.exists():
+            create_chord_part_audio(
+                create_chord_tone_waveform(root_note, chord_quality, target_tone),
+                tone_file_path,
+            )
+
+        filename = quality_filename
+        tone_audio_file = f"chords/{tone_filename}"
+    else:
+        filename = make_safe_filename(
+            f"level_{level}_{root_note}_{chord_quality}_{target_tone or question_type}_{chord_audio_cache_label()}.wav"
+        )
+        file_path = config.CHORD_AUDIO_FOLDER / filename
+
+        if not file_path.exists():
+            create_chord_audio(level, root_note, chord_quality, target_tone, file_path)
 
     return ChordQuestion(
         level=level,
@@ -469,6 +529,7 @@ def create_chord_question(level):
         audio_file=f"chords/{filename}",
         prompt=prompt,
         question_type=question_type,
+        tone_audio_file=tone_audio_file,
         target_tone=target_tone,
         quality_answer=quality_answer,
         quality_choices=quality_choices,
